@@ -1,5 +1,5 @@
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 allowed_env_files = {".env.example"}
 tracked = subprocess.run(

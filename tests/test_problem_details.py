@@ -1,7 +1,6 @@
+from apps.system.exceptions import problem_details_exception_handler
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory
-
-from apps.system.exceptions import problem_details_exception_handler
 
 
 def test_validation_errors_use_problem_details_semantics() -> None:

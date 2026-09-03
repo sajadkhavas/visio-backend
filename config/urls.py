@@ -1,8 +1,7 @@
+from apps.system.views import health, readiness
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView
-
-from apps.system.views import health, readiness
 
 urlpatterns = [
     path("admin/", admin.site.urls),

@@ -1,5 +1,5 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 WORKFLOW_ROOT = Path(".github/workflows")
 PIN = re.compile(r"^\s*uses:\s*[^@\s]+@[0-9a-f]{40}(?:\s+#.*)?$")

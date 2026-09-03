@@ -24,9 +24,7 @@ def readiness(request) -> JsonResponse:
             cursor.fetchone()
     except DatabaseError:
         logger.warning("Readiness probe failed because PostgreSQL is unavailable.")
-        response = JsonResponse(
-            {"status": "unavailable", "service": "visio-backend"}, status=503
-        )
+        response = JsonResponse({"status": "unavailable", "service": "visio-backend"}, status=503)
         response["Cache-Control"] = "no-store"
         return response
 

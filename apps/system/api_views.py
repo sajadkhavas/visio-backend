@@ -14,6 +14,4 @@ class ApiStatusView(APIView):
     @extend_schema(responses={200: ApiStatusSerializer})
     def get(self, request: Request) -> Response:
         del request
-        return Response(
-            {"service": "visio-backend", "status": "ok", "api_version": "v1"}
-        )
+        return Response({"service": "visio-backend", "status": "ok", "api_version": "v1"})
