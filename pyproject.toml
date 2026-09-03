@@ -55,6 +55,10 @@ exclude = ["apps/accounts/migrations/"]
 module = ["rest_framework.*", "drf_spectacular.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["apps.system.serializers", "apps.system.api_views"]
+disallow_subclassing_any = false
+
 [tool.django-stubs]
 django_settings_module = "config.settings.test"
 strict_settings = true
