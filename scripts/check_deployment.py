@@ -15,9 +15,7 @@ EXPECTED_SETTINGS = "config.settings.production"
 DEFERRED_WARNING_IDS = {"security.W005", "security.W021"}
 
 if os.environ.get("DJANGO_SETTINGS_MODULE") != EXPECTED_SETTINGS:
-    raise SystemExit(
-        f"Deployment gate requires DJANGO_SETTINGS_MODULE={EXPECTED_SETTINGS}."
-    )
+    raise SystemExit(f"Deployment gate requires DJANGO_SETTINGS_MODULE={EXPECTED_SETTINGS}.")
 
 django.setup()
 issues = run_checks(include_deployment_checks=True)
