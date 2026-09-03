@@ -1,0 +1,64 @@
+[project]
+name = "visio-backend"
+version = "0.1.0"
+description = "Canonical Python backend for VISIO."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "Django==5.2.17",
+  "djangorestframework==3.18.0",
+  "drf-spectacular==0.30.0",
+  "psycopg[binary]==3.3.5",
+]
+
+[dependency-groups]
+dev = [
+  "django-stubs==5.2.9",
+  "mypy==1.19.1",
+  "pytest==9.1.1",
+  "pytest-django==4.14.0",
+  "ruff==0.16.5",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["apps", "config", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings/*.py" = ["F403", "F405"]
+"apps/accounts/migrations/*.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main"]
+strict = true
+warn_unused_ignores = true
+show_error_codes = true
+exclude = ["apps/accounts/migrations/"]
+
+[[tool.mypy.overrides]]
+module = ["rest_framework.*", "drf_spectacular.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["apps.system.serializers", "apps.system.api_views"]
+disallow_subclassing_any = false
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+strict_settings = true
