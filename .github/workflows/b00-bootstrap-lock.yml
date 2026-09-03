@@ -9,11 +9,13 @@ on:
       - "pyproject.toml"
       - "config/**"
       - "apps/**"
+      - "tests/**"
+      - "scripts/**"
       - ".github/workflows/b00-bootstrap-lock.yml"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: b00-bootstrap-${{ github.ref }}
@@ -21,7 +23,7 @@ concurrency:
 
 jobs:
   bootstrap:
-    name: Resolve lock and generate first user migration
+    name: Resolve lock, generate migration and normalize Python
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -50,7 +52,7 @@ jobs:
       - name: Checkout exact branch head
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Set up exact Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -67,6 +69,14 @@ jobs:
           uv lock
           uv sync --frozen --all-groups
 
+      - name: Normalize Python with pinned Ruff
+        run: |
+          set -Eeuo pipefail
+          uv run ruff check --fix .
+          uv run ruff format .
+          uv run ruff check .
+          uv run ruff format --check .
+
       - name: Generate the first accounts migration with Django
         run: |
           set -Eeuo pipefail
@@ -74,15 +84,16 @@ jobs:
           uv run python manage.py makemigrations accounts --noinput
           test -f apps/accounts/migrations/0001_initial.py
 
-      - name: Emit generated bootstrap artifacts
+      - name: Commit deterministic generated artifacts
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo "UV_LOCK_B64_START"
-          base64 -w0 uv.lock
-          echo
-          echo "UV_LOCK_B64_END"
-          echo "ACCOUNTS_MIGRATION_B64_START"
-          base64 -w0 apps/accounts/migrations/0001_initial.py
-          echo
-          echo "ACCOUNTS_MIGRATION_B64_END"
+          git add uv.lock apps/accounts/migrations/0001_initial.py apps config tests scripts manage.py
+          if git diff --cached --quiet; then
+            echo "No generated or formatting changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(b00): commit generated lock migration and formatting"
+          git push origin HEAD:phase/visio-b00-python-backend-foundation
