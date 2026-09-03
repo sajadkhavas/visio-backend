@@ -56,7 +56,12 @@ module = ["rest_framework.*", "drf_spectacular.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["apps.system.serializers", "apps.system.api_views"]
+module = [
+  "apps.system.serializers",
+  "apps.system.api_views",
+  "apps.accounts.serializers",
+  "apps.accounts.api_views",
+]
 disallow_subclassing_any = false
 
 [tool.django-stubs]
