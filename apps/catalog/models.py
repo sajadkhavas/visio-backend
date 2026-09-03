@@ -264,7 +264,8 @@ class ProductMedia(models.Model):
 
     def clean(self) -> None:
         super().clean()
-        if self.variant_id is not None and self.variant.product_id != self.product_id:
+        variant = self.variant
+        if variant is not None and variant.product_id != self.product_id:
             raise ValidationError({"variant": "Media variant must belong to the same product."})
 
 
