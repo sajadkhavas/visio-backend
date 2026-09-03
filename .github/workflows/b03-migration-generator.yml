@@ -49,6 +49,7 @@ jobs:
           set -Eeuo pipefail
           uv run python manage.py makemigrations commerce
           uv run ruff format apps/commerce/migrations
+          uv run ruff check --fix apps/commerce/migrations
           uv run ruff check apps/commerce/migrations
 
       - name: Commit generated migration when needed
