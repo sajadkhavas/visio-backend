@@ -62,3 +62,6 @@ class Address(models.Model):
                 name="accounts_one_default_address_per_user",
             ),
         ]
+
+    def __str__(self) -> str:
+        return f"{self.label}: {self.city}"
