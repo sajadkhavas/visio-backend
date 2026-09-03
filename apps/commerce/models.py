@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from apps.catalog.models import ProductVariant
 from django.db import models
+
+from apps.catalog.models import ProductVariant
 
 
 class VariantPrice(models.Model):
