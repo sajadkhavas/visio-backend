@@ -201,11 +201,11 @@ def merge_browser_cart(
         raise ValueError(f"Import payload cannot exceed {MAX_IMPORT_LINES} lines.")
 
     deduplicated: dict[UUID, int] = {}
-    for line in raw_lines:
-        validate_quantity(line.quantity)
-        deduplicated[line.variant_id] = min(
+    for raw_line in raw_lines:
+        validate_quantity(raw_line.quantity)
+        deduplicated[raw_line.variant_id] = min(
             CART_MAX_QUANTITY,
-            deduplicated.get(line.variant_id, 0) + line.quantity,
+            deduplicated.get(raw_line.variant_id, 0) + raw_line.quantity,
         )
 
     accepted: dict[UUID, tuple[ProductVariant, int]] = {}
@@ -224,12 +224,12 @@ def merge_browser_cart(
         changed = False
         for variant_id in sorted(accepted, key=str):
             variant, imported_quantity = accepted[variant_id]
-            line = (
+            cart_line = (
                 CartLine.objects.select_for_update()
                 .filter(cart=locked_cart, variant=variant)
                 .first()
             )
-            if line is None:
+            if cart_line is None:
                 CartLine.objects.create(
                     cart=locked_cart,
                     variant=variant,
@@ -238,10 +238,10 @@ def merge_browser_cart(
                 changed = True
                 continue
 
-            merged_quantity = max(line.quantity, imported_quantity)
-            if merged_quantity != line.quantity:
-                line.quantity = merged_quantity
-                line.save(update_fields=("quantity", "updated_at"))
+            merged_quantity = max(cart_line.quantity, imported_quantity)
+            if merged_quantity != cart_line.quantity:
+                cart_line.quantity = merged_quantity
+                cart_line.save(update_fields=("quantity", "updated_at"))
                 changed = True
 
         if changed:
