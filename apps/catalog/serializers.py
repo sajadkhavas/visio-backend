@@ -1,13 +1,14 @@
 from datetime import datetime
 from typing import Any
 
+from django.utils import timezone
+from rest_framework import serializers
+
 from apps.commerce.projections import (
     variant_availability_payload,
     variant_is_on_sale,
     variant_price_payload,
 )
-from django.utils import timezone
-from rest_framework import serializers
 
 from .models import (
     Brand,
