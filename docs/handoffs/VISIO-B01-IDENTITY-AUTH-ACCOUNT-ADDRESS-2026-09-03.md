@@ -4,22 +4,36 @@ Date: 2026-09-03
 
 ## Status
 
-`B01_CLOSURE_CANDIDATE`
+`B01_IMPLEMENTATION_COMPLETED / MERGED / POST_MERGE_GREEN`
 
-B01 becomes `COMPLETED / MERGED / CLOSED` only after this documentation head is green, the B01 PR is merged with its expected head SHA, and the post-merge Backend Quality Gate on `main` is green.
+The B01 application implementation is accepted. This evidence-only branch records the exact merge and post-merge gate. After this documentation is merged, the live phase/master trackers advance to B02.
 
 ## Immutable phase coordinates
 
 - Backend repository: `sajadkhavas/visio-backend`
-- Branch: `phase/visio-b01-identity-auth-account-address`
+- Implementation branch: `phase/visio-b01-identity-auth-account-address`
 - START_SHA: `4b118845cdbdf8159c5ef5e97252a7a9719588f6`
 - Implementation END_SHA: `2bd278034af122bb3c3a485160792fd5f0f1d434`
-- Exact implementation gate: Backend Quality Gate #53 / run `33773094652` — PASS
+- Closure/freeze SHA / PR #4 head: `a7119da44b55632185f1795119f4c7cd5237c58e`
+- Freeze ref: `freeze/visio-backend-b01-20260903`
+- Implementation PR: `#4 — B01: identity, authentication, account and address domain`
+- Implementation merge SHA / accepted B01 application baseline: `af1cc61767f9f9c64d7b331630007fc414d90b1e`
 - PostgreSQL test result: `24 passed`
 - Final report: `docs/release/B01_FINAL_REPORT.md`
 - Architecture decisions: `docs/architecture/B01_IDENTITY_AUTH_ACCOUNT_ADDRESS_DECISIONS.md`
 - Implementation notes: `docs/architecture/B01_IMPLEMENTATION_NOTES.md`
 - Python learning notes: `docs/learning/B01_AUTH_ACCOUNT_NOTES.md`
+
+## Exact CI evidence
+
+- Backend Quality Gate #53 / run `33773094652` on implementation END_SHA — PASS
+- Backend Quality Gate #55 / run `33773366654` on closure/freeze SHA — PASS
+- PR-triggered Backend Quality Gate #56 / run `33773545476` on exact PR #4 head — PASS
+- unresolved review threads on PR #4 — 0
+- PR #4 merged with expected head SHA — PASS
+- post-merge Backend Quality Gate #57 / run `33773689986` on `af1cc61767f9f9c64d7b331630007fc414d90b1e` — PASS
+
+The permanent gate verifies frozen dependencies, Action pins, secret sanity, Ruff, strict mypy, Django checks, migration drift, migrate-from-zero on PostgreSQL 16.15, all tests, OpenAPI, production deployment policy, and Python bytecode compilation.
 
 ## Accepted frozen contracts
 
@@ -66,34 +80,15 @@ Accepted migration:
 
 `apps/accounts/migrations/0002_address_alter_user_email_and_more.py`
 
-It is a Django 5.2.17-generated migration and passes permanent migration-drift plus empty-PostgreSQL migration gates.
+It is Django 5.2.17-generated, has no rejected `AlterModelOptions` drift, and passes permanent migration-drift plus empty-PostgreSQL migration gates.
 
 Do not manually replace it with a hand-authored migration unless a future phase has a documented schema reason and passes a new migration gate.
-
-## CI state
-
-Implementation END_SHA `2bd278034af122bb3c3a485160792fd5f0f1d434` passed:
-
-- frozen dependencies
-- Action pin verification
-- secret sanity
-- Ruff format/lint
-- mypy
-- Django checks
-- migration drift
-- migrate from zero on PostgreSQL 16.15
-- all 24 tests
-- OpenAPI validation
-- production deployment policy
-- bytecode compilation
-
-The one-shot write-enabled migration workflow has been removed. Permanent CI is read-only for repository contents.
 
 ## Main-history note
 
 B01 started from `4b118845cdbdf8159c5ef5e97252a7a9719588f6`.
 
-Backend `main` later received two accidental documentation create/delete commits. At `efeb819cd998b4630859de2335f02aa5a0e8fb74`, comparison against the B01 start baseline contains **zero file changes**. Keep those neutral commits; do not force-push, rebase, or rewrite shared history merely to erase them.
+Backend `main` later received two accidental documentation create/delete commits. At pre-B01 main `efeb819cd998b4630859de2335f02aa5a0e8fb74`, comparison against the B01 start baseline contained **zero file changes**. The shared history was preserved; no force-push/rebase/history rewrite was used merely to erase neutral commits.
 
 ## Deferred capabilities — do not misreport as B01
 
@@ -105,7 +100,7 @@ Backend `main` later received two accidental documentation create/delete commits
 - staff/role/permission business policy
 - account audit trail
 - address deliverability / shipping zones
-- catalog identity
+- catalog authority
 - pricing/inventory/cart/order/payment authority
 
 ## B02 consumption rule
@@ -116,18 +111,13 @@ Catalog entities must become backend production authority while frontend preview
 
 Pricing and inventory are not B02 authority; they remain B03.
 
-Search ranking/full search authority remains B08.
+Full search/ranking authority remains B08.
 
-## Closure sequence
+## Resume instruction
 
-1. Run Backend Quality Gate on this exact closure-documentation head.
-2. Require SUCCESS before PR merge.
-3. Create/update B01 PR with START_SHA, implementation END_SHA, closure SHA and CI evidence.
-4. Confirm mergeability and zero unresolved review blockers.
-5. Merge with the exact expected PR head SHA.
-6. Require Backend Quality Gate SUCCESS on the resulting `main` merge SHA.
-7. Close tracking issue #47 and update master issue #39.
-8. Register B02 as NEXT.
+Do not redo B00 or B01.
+
+Start B02 from the final backend `main` after this evidence-only documentation merge. Re-check current official Django/DRF/PostgreSQL guidance before B02 implementation and register a new B02 START_SHA.
 
 ## NEXT
 
