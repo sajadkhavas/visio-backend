@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "apps.accounts.apps.AccountsConfig",
     "apps.catalog.apps.CatalogConfig",
+    "apps.commerce.apps.CommerceConfig",
     "apps.system.apps.SystemConfig",
 ]
 
