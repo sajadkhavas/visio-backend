@@ -40,7 +40,9 @@ class RegistrationSerializer(serializers.Serializer):
         attrs["email"] = email
 
         if User.objects.filter(email__iexact=email).exists():
-            raise serializers.ValidationError({"email": "An account with this email already exists."})
+            raise serializers.ValidationError(
+                {"email": "An account with this email already exists."}
+            )
 
         candidate = User(
             username="password-validation",
