@@ -95,9 +95,7 @@ def add_cart_line(user: User, variant_id: UUID, *, quantity: int) -> Cart:
     with transaction.atomic():
         locked_cart = Cart.objects.select_for_update().get(pk=cart.pk)
         line = (
-            CartLine.objects.select_for_update()
-            .filter(cart=locked_cart, variant=variant)
-            .first()
+            CartLine.objects.select_for_update().filter(cart=locked_cart, variant=variant).first()
         )
         if line is None:
             CartLine.objects.create(cart=locked_cart, variant=variant, quantity=quantity)

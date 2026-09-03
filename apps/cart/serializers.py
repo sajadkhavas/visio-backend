@@ -117,8 +117,7 @@ def _client_snapshot_payload(snapshot: dict[str, Any]) -> dict[str, Any]:
 
 def _price_changed(previous: dict[str, Any], current: dict[str, Any]) -> bool:
     return any(
-        previous.get(field) != current.get(field)
-        for field in ("amount", "currency", "displayUnit")
+        previous.get(field) != current.get(field) for field in ("amount", "currency", "displayUnit")
     )
 
 
@@ -137,9 +136,7 @@ def cart_payload(
     subtotal_authoritative = True
 
     lines = (
-        cart.lines.select_related("variant", "variant__product")
-        .order_by("added_at", "id")
-        .all()
+        cart.lines.select_related("variant", "variant__product").order_by("added_at", "id").all()
     )
     for line in lines:
         variant = line.variant
@@ -183,9 +180,7 @@ def cart_payload(
                     "current": current_price,
                     "acknowledged": False,
                 }
-                issues.append(
-                    {"type": "price-changed", "key": key, "current": current_price}
-                )
+                issues.append({"type": "price-changed", "key": key, "current": current_price})
 
         items.append(
             {

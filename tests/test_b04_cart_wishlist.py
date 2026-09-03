@@ -5,7 +5,12 @@ from decimal import Decimal
 import pytest
 from apps.accounts.models import User
 from apps.cart.models import Cart, CartLine, WishlistItem
-from apps.cart.services import BrowserCartLine, add_cart_line, get_or_create_active_cart, merge_browser_cart
+from apps.cart.services import (
+    BrowserCartLine,
+    add_cart_line,
+    get_or_create_active_cart,
+    merge_browser_cart,
+)
 from apps.catalog.models import Brand, Category, Product, ProductVariant
 from apps.commerce.models import InventoryReservation, VariantInventory, VariantPrice
 from django.db import IntegrityError, close_old_connections, transaction
