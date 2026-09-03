@@ -102,9 +102,7 @@ class Product(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                condition=(
-                    ~models.Q(status="published") | models.Q(published_at__isnull=False)
-                ),
+                condition=(~models.Q(status="published") | models.Q(published_at__isnull=False)),
                 name="catalog_prod_publish_time",
             ),
         ]
@@ -190,7 +188,9 @@ class ProductVariantOption(models.Model):
         on_delete=models.CASCADE,
         related_name="option_selections",
     )
-    option = models.ForeignKey(ProductOption, on_delete=models.PROTECT, related_name="variant_selections")
+    option = models.ForeignKey(
+        ProductOption, on_delete=models.PROTECT, related_name="variant_selections"
+    )
     value = models.ForeignKey(
         ProductOptionValue,
         on_delete=models.PROTECT,
