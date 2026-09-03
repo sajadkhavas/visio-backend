@@ -1,13 +1,14 @@
 from functools import reduce
 from operator import or_
 
-from apps.commerce.models import InventoryReservation
 from django.db.models import Prefetch, Q, QuerySet
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
+
+from apps.commerce.models import InventoryReservation
 
 from .models import (
     Brand,
