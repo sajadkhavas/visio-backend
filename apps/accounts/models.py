@@ -10,7 +10,7 @@ class User(AbstractUser):
 
     email = models.EmailField(unique=True)
 
-    class Meta:
+    class Meta(AbstractUser.Meta):
         constraints = [
             models.UniqueConstraint(
                 Lower("email"),
