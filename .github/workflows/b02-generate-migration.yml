@@ -44,6 +44,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           uv run python manage.py makemigrations catalog --noinput
+          uv run ruff check --fix apps/catalog/migrations
           uv run ruff format apps/catalog/migrations
           uv run ruff check apps/catalog/migrations
           test -f apps/catalog/migrations/0001_initial.py
