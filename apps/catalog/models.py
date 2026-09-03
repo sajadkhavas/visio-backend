@@ -49,6 +49,9 @@ class Category(models.Model):
             ),
         ]
 
+    def __str__(self) -> str:
+        return self.name
+
     def clean(self) -> None:
         super().clean()
         if self.parent_id is None:
@@ -63,9 +66,6 @@ class Category(models.Model):
                 raise ValidationError({"parent": "Category hierarchy cannot contain a cycle."})
             visited.add(ancestor.id)
             ancestor = ancestor.parent
-
-    def __str__(self) -> str:
-        return self.name
 
 
 class Product(models.Model):
@@ -155,7 +155,7 @@ class ProductOptionValue(models.Model):
 class ProductVariant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="variants")
-    sku = models.CharField(max_length=120, null=True, blank=True)
+    sku = models.CharField(max_length=120, blank=True, default="")
     is_active = models.BooleanField(default=True)
     is_default = models.BooleanField(default=False)
     sort_order = models.PositiveIntegerField(default=0)
@@ -167,7 +167,7 @@ class ProductVariant(models.Model):
         constraints = [
             models.UniqueConstraint(
                 Lower("sku"),
-                condition=models.Q(sku__isnull=False) & ~models.Q(sku=""),
+                condition=~models.Q(sku=""),
                 name="catalog_variant_sku_ci_uq",
             ),
             models.UniqueConstraint(
@@ -205,6 +205,9 @@ class ProductVariantOption(models.Model):
             ),
         ]
 
+    def __str__(self) -> str:
+        return f"{self.variant}: {self.option.key}={self.value.value}"
+
     def clean(self) -> None:
         super().clean()
         errors: dict[str, str] = {}
@@ -216,9 +219,6 @@ class ProductVariantOption(models.Model):
                 errors["value"] = "Selected value must belong to the selected option."
         if errors:
             raise ValidationError(errors)
-
-    def __str__(self) -> str:
-        return f"{self.variant}: {self.option.key}={self.value.value}"
 
 
 def catalog_media_upload_to(instance: ProductMedia, filename: str) -> str:
@@ -259,13 +259,13 @@ class ProductMedia(models.Model):
             ),
         ]
 
+    def __str__(self) -> str:
+        return self.alt
+
     def clean(self) -> None:
         super().clean()
         if self.variant_id is not None and self.variant.product_id != self.product_id:
             raise ValidationError({"variant": "Media variant must belong to the same product."})
-
-    def __str__(self) -> str:
-        return self.alt
 
 
 class ProductBadge(models.Model):
