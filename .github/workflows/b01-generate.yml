@@ -1,0 +1,71 @@
+name: B01 One-Shot Migration Generator
+
+on:
+  push:
+    branches:
+      - "phase/visio-b01-identity-auth-account-address"
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16.15-bookworm
+        env:
+          POSTGRES_DB: visio_ci
+          POSTGRES_USER: visio_ci
+          POSTGRES_PASSWORD: visio_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U visio_ci -d visio_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      POSTGRES_DB: visio_ci
+      POSTGRES_USER: visio_ci
+      POSTGRES_PASSWORD: visio_ci_password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - name: Checkout branch with push credential
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: true
+
+      - name: Set up exact Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+
+      - name: Install exact uv and dependencies
+        run: |
+          python -m pip install --disable-pip-version-check "uv==0.12.9"
+          uv sync --frozen --all-groups
+
+      - name: Generate migration and normalize source
+        run: |
+          set -Eeuo pipefail
+          uv run python manage.py makemigrations accounts
+          uv run ruff check --fix apps config tests
+          uv run ruff format apps config tests
+
+      - name: Commit deterministic generated changes once
+        run: |
+          set -Eeuo pipefail
+          git add apps config tests
+          if git diff --cached --quiet; then
+            echo "No generated changes remain."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(b01): regenerate clean Django migration"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
