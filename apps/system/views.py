@@ -1,14 +1,14 @@
 import logging
 
 from django.db import DatabaseError, connection
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_http_methods
 
 logger = logging.getLogger(__name__)
 
 
 @require_http_methods(["GET", "HEAD"])
-def health(request) -> JsonResponse:
+def health(request: HttpRequest) -> JsonResponse:
     del request
     response = JsonResponse({"status": "ok", "service": "visio-backend"})
     response["Cache-Control"] = "no-store"
@@ -16,7 +16,7 @@ def health(request) -> JsonResponse:
 
 
 @require_http_methods(["GET", "HEAD"])
-def readiness(request) -> JsonResponse:
+def readiness(request: HttpRequest) -> JsonResponse:
     del request
     try:
         with connection.cursor() as cursor:
