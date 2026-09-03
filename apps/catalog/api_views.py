@@ -1,6 +1,7 @@
 from functools import reduce
 from operator import or_
 
+from apps.commerce.models import InventoryReservation
 from django.db.models import Prefetch, Q, QuerySet
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -41,12 +42,21 @@ def public_product_queryset() -> QuerySet[Product]:
         Prefetch("values", queryset=active_values)
     )
     selections = ProductVariantOption.objects.select_related("option", "value").order_by("id")
+    active_reservations = InventoryReservation.objects.filter(
+        status=InventoryReservation.Status.ACTIVE
+    ).order_by("expires_at", "id")
     active_variants = (
         ProductVariant.objects.filter(is_active=True)
+        .select_related("price_record", "inventory_record")
         .order_by("sort_order", "id")
         .prefetch_related(
             Prefetch("option_selections", queryset=selections),
             Prefetch("media", queryset=active_media),
+            Prefetch(
+                "inventory_record__reservations",
+                queryset=active_reservations,
+                to_attr="active_reservations",
+            ),
         )
     )
     badges = ProductBadge.objects.filter(is_active=True).order_by("position", "id")
