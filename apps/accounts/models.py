@@ -10,7 +10,9 @@ class User(AbstractUser):
 
     email = models.EmailField(unique=True)
 
-    class Meta(AbstractUser.Meta):
+    class Meta:
+        verbose_name = "user"
+        verbose_name_plural = "users"
         constraints = [
             models.UniqueConstraint(
                 Lower("email"),
