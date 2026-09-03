@@ -86,11 +86,7 @@ def reserve_variant(
 
 def _reservation_inventory_id(reservation_id: UUID) -> UUID:
     return UUID(
-        str(
-            InventoryReservation.objects.only("inventory_id")
-            .get(pk=reservation_id)
-            .inventory_id
-        )
+        str(InventoryReservation.objects.only("inventory_id").get(pk=reservation_id).inventory_id)
     )
 
 
