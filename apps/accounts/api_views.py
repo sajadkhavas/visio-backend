@@ -4,12 +4,14 @@ from django.contrib.auth import authenticate
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth import update_session_auth_hash
+from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -81,9 +83,7 @@ class LoginView(APIView):
             password=str(serializer.validated_data["password"]),
         )
         if not isinstance(user, User):
-            raise LoginSerializer.ValidationError(
-                {"non_field_errors": ["Invalid email or password."]}
-            )
+            raise ValidationError({"non_field_errors": ["Invalid email or password."]})
 
         django_login(
             _django_request(request),
@@ -139,7 +139,7 @@ class AddressListCreateView(generics.ListCreateAPIView):
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Address]:
         user = cast(User, self.request.user)
         return Address.objects.filter(user=user)
 
@@ -149,6 +149,6 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Address]:
         user = cast(User, self.request.user)
         return Address.objects.filter(user=user)
