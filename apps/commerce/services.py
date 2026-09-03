@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from django.db import transaction
@@ -20,7 +20,7 @@ class ReservationStateError(Exception):
     """Raised when a reservation transition is not valid from its current state."""
 
 
-def _reserved_quantity(inventory: VariantInventory, *, at: object) -> int:
+def _reserved_quantity(inventory: VariantInventory, *, at: datetime) -> int:
     total = (
         inventory.reservations.filter(
             status=InventoryReservation.Status.ACTIVE,
@@ -31,7 +31,7 @@ def _reserved_quantity(inventory: VariantInventory, *, at: object) -> int:
     return int(total)
 
 
-def _expire_stale_locked(inventory: VariantInventory, *, at: object) -> int:
+def _expire_stale_locked(inventory: VariantInventory, *, at: datetime) -> int:
     return int(
         inventory.reservations.filter(
             status=InventoryReservation.Status.ACTIVE,
@@ -40,7 +40,7 @@ def _expire_stale_locked(inventory: VariantInventory, *, at: object) -> int:
     )
 
 
-def available_quantity(inventory: VariantInventory, *, at: object | None = None) -> int:
+def available_quantity(inventory: VariantInventory, *, at: datetime | None = None) -> int:
     now = at or timezone.now()
     reserved = _reserved_quantity(inventory, at=now)
     available = inventory.on_hand - reserved
@@ -54,7 +54,7 @@ def reserve_variant(
     *,
     quantity: int,
     ttl: timedelta = DEFAULT_RESERVATION_TTL,
-    at: object | None = None,
+    at: datetime | None = None,
 ) -> InventoryReservation:
     if quantity <= 0:
         raise ValueError("Reservation quantity must be positive.")
@@ -97,7 +97,7 @@ def _reservation_inventory_id(reservation_id: UUID) -> UUID:
 def release_reservation(
     reservation_id: UUID,
     *,
-    at: object | None = None,
+    at: datetime | None = None,
 ) -> InventoryReservation:
     now = at or timezone.now()
     inventory_id = _reservation_inventory_id(reservation_id)
@@ -124,7 +124,7 @@ def release_reservation(
 def consume_reservation(
     reservation_id: UUID,
     *,
-    at: object | None = None,
+    at: datetime | None = None,
 ) -> InventoryReservation:
     now = at or timezone.now()
     inventory_id = _reservation_inventory_id(reservation_id)
@@ -158,7 +158,7 @@ def set_on_hand(
     variant_id: UUID,
     *,
     quantity: int,
-    at: object | None = None,
+    at: datetime | None = None,
 ) -> VariantInventory:
     if quantity < 0:
         raise ValueError("On-hand quantity cannot be negative.")
