@@ -7,9 +7,14 @@ would turn a CI checkbox into a domain-wide operational commitment.
 """
 
 import os
+import sys
+from pathlib import Path
 
-import django
-from django.core.checks import ERROR, WARNING, run_checks
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPOSITORY_ROOT))
+
+import django  # noqa: E402
+from django.core.checks import ERROR, WARNING, run_checks  # noqa: E402
 
 EXPECTED_SETTINGS = "config.settings.production"
 DEFERRED_WARNING_IDS = {"security.W005", "security.W021"}
