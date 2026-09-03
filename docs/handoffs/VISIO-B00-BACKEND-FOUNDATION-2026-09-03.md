@@ -4,7 +4,7 @@ Date: 2026-09-03
 
 ## Resume point
 
-Do not rebuild the B00 foundation. Continue from the accepted B00 branch/merge evidence and move to B01 only after the B00 closure gate is fully satisfied.
+Do not rebuild the B00 foundation. Implementation has merged and post-merge CI is green. B00 remains open only because the backend repository is still public instead of private.
 
 Backend repository:
 
@@ -18,14 +18,33 @@ Implementation END_SHA:
 
 `2a10a2894e0d823822d2a1290933dfea44dbcaf9`
 
-Working branch:
+Exact closure/PR head:
 
-`phase/visio-b00-python-backend-foundation`
+`7f9a8b08bf5cbfde30d6188eff54c7143a6d0c0b`
+
+Implementation PR:
+
+`#1 — MERGED`
+
+Accepted backend application baseline / merge SHA:
+
+`644e0bde9e1c8b103463bc2cf76e1f842faec1ff`
+
+## Verified evidence
+
+- Backend Quality Gate #14 / `33733601512` on exact closure head — PASS
+- PR-triggered Backend Quality Gate #15 / `33735130753` on exact closure head — PASS
+- unresolved review threads — 0
+- PR #1 merged with expected head SHA
+- post-merge Backend Quality Gate #16 / `33735267992` on `main` merge SHA — PASS
+- PostgreSQL-backed test suite — 10 PASS
+- frozen dependency install, Ruff, strict mypy, Django checks, migration drift, migrate-from-zero, OpenAPI, deployment policy, compileall, Action pinning and secret sanity — PASS
 
 ## What exists
 
 - reproducibly locked Python/Django/DRF/PostgreSQL foundation;
 - split local/test/production settings;
+- fail-closed production configuration;
 - first custom User migration;
 - PostgreSQL-backed CI and migrate-from-zero;
 - `/api/v1/`, `/health/`, `/ready/`, `/api/v1/schema/`;
@@ -44,17 +63,19 @@ B01 owns identity/auth/account/address behavior and must start from this foundat
 
 `security.W005` and `security.W021` are explicitly deferred to R00/S00 because `includeSubDomains` and browser preload require a proven production DNS/TLS topology. All other deployment errors/warnings are blocking.
 
-## Repository setting still required
+## Only remaining B00 blocker
 
-The canonical repository is intended to be private. If GitHub still reports `sajadkhavas/visio-backend` as public, change repository visibility to Private before B00 is closed. No secret should be added before or after that change; secrets remain environment/server-managed.
+The canonical repository is required to be private. GitHub still reports `sajadkhavas/visio-backend` as `public` after implementation merge and post-merge CI.
+
+The connected GitHub tooling cannot mutate repository visibility. No secret is committed; secrets remain environment/server-managed.
+
+B00 therefore remains **NOT CLOSED** until repository visibility is changed to Private and verified.
 
 ## B01 entry rule
 
 B01 may start only after:
 
-- exact final B00 PR head quality gate PASS;
-- zero blocking review threads;
 - backend repository verified private;
-- B00 PR merged;
-- post-merge main quality gate PASS;
 - B00 closure registered in VISIO master issue #39 and B00 issue #44.
+
+All code, PR, exact-head CI and post-merge CI requirements are already satisfied and must not be repeated.
