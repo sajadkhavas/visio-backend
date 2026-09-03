@@ -1,9 +1,8 @@
 from typing import cast
 
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, update_session_auth_hash
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
-from django.contrib.auth import update_session_auth_hash
 from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.middleware.csrf import get_token

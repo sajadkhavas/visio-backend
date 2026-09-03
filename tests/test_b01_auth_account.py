@@ -2,10 +2,9 @@ from typing import cast
 from uuid import uuid4
 
 import pytest
+from apps.accounts.models import User
 from django.core.cache import cache
 from django.test import Client, override_settings
-
-from apps.accounts.models import User
 
 pytestmark = pytest.mark.django_db
 

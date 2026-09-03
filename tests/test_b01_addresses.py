@@ -2,10 +2,9 @@ from typing import cast
 from uuid import uuid4
 
 import pytest
+from apps.accounts.models import Address, User
 from django.db import IntegrityError, transaction
 from django.test import Client
-
-from apps.accounts.models import Address, User
 
 pytestmark = pytest.mark.django_db
 
