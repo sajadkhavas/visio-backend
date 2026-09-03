@@ -14,14 +14,14 @@ The accepted `AUTH_USER_MODEL = accounts.User` is preserved. B01 evolves that mo
 
 ### Identity
 
-- Customer login identifier: **email address**.
-- Email is normalized to lowercase and is unique.
-- Legacy `username` from `AbstractUser` is removed in B01; `USERNAME_FIELD = "email"`.
-- A dedicated `UserManager` owns user/superuser creation.
+- Customer-facing login identifier: **email address**.
+- Email is normalized to lowercase and unique.
+- The inherited Django `username` column is retained as an **internal compatibility field** and always mirrors the normalized email; customers never choose or see a separate username.
+- `AUTH_USER_MODEL` and the B00 migration lineage remain unchanged.
 - First/last name remain profile fields.
 - Phone number is not a login identifier in B01. OTP/phone verification is intentionally not invented before a real notification/provider phase.
 
-Django officially supports using a unique email or another unique field as `USERNAME_FIELD` on a custom user model.
+This keeps the external identity contract email-first while avoiding an unnecessary replacement of the already-accepted `AbstractUser`/admin/migration shape.
 
 ### Browser authentication
 
@@ -102,7 +102,7 @@ B01 closes only after:
 - session + CSRF behavior is proven by tests;
 - registration/login/logout/current-account/password-change are proven;
 - ownership isolation/default-address invariant are proven on PostgreSQL;
-- invalid/unauthenticated/forbidden/throttled behavior is tested;
+- invalid/unauthenticated/ownership/throttled behavior is tested;
 - OpenAPI generation remains green;
 - Ruff, mypy, Django checks, deployment policy and permanent Backend Quality Gate are green on exact PR head;
 - PR merges with expected head and post-merge `main` Quality Gate passes;
