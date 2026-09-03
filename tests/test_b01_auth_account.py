@@ -4,7 +4,8 @@ from uuid import uuid4
 import pytest
 from apps.accounts.models import User
 from django.core.cache import cache
-from django.test import Client, override_settings
+from django.test import Client
+from rest_framework.throttling import ScopedRateThrottle
 
 pytestmark = pytest.mark.django_db
 
@@ -186,36 +187,31 @@ def test_logout_requires_csrf_and_clears_session() -> None:
     assert denied.headers["Content-Type"].startswith("application/problem+json")
 
 
-def test_login_scope_throttles_repeated_requests() -> None:
+def test_login_scope_throttles_repeated_requests(monkeypatch: pytest.MonkeyPatch) -> None:
     cache.clear()
-    throttled_rest_framework = {
-        "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-        "EXCEPTION_HANDLER": "apps.system.exceptions.problem_details_exception_handler",
-        "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
-        "DEFAULT_AUTHENTICATION_CLASSES": [
-            "rest_framework.authentication.SessionAuthentication",
-        ],
-        "DEFAULT_THROTTLE_RATES": {
+    monkeypatch.setattr(
+        ScopedRateThrottle,
+        "THROTTLE_RATES",
+        {
             "auth_register": "5/min",
             "auth_login": "1/min",
         },
-    }
+    )
 
-    with override_settings(REST_FRAMEWORK=throttled_rest_framework):
-        client = Client(enforce_csrf_checks=True)
-        token = csrf_token(client)
-        first = client.post(
-            LOGIN_PATH,
-            {"email": "nobody@example.com", "password": "Wrong-Pass!42"},
-            content_type="application/json",
-            HTTP_X_CSRFTOKEN=token,
-        )
-        second = client.post(
-            LOGIN_PATH,
-            {"email": "nobody@example.com", "password": "Wrong-Pass!42"},
-            content_type="application/json",
-            HTTP_X_CSRFTOKEN=token,
-        )
+    client = Client(enforce_csrf_checks=True)
+    token = csrf_token(client)
+    first = client.post(
+        LOGIN_PATH,
+        {"email": "nobody@example.com", "password": "Wrong-Pass!42"},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    second = client.post(
+        LOGIN_PATH,
+        {"email": "nobody@example.com", "password": "Wrong-Pass!42"},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=token,
+    )
 
     cache.clear()
     assert first.status_code == 400
