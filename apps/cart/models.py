@@ -32,7 +32,7 @@ class Cart(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=("user",),
-                condition=models.Q(status=Status.ACTIVE),
+                condition=models.Q(status="active"),
                 name="cart_one_active_per_user",
             ),
         ]
