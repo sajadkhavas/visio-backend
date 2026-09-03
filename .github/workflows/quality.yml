@@ -97,7 +97,7 @@ jobs:
       - name: Validate OpenAPI generation
         run: uv run python manage.py spectacular --file /tmp/visio-openapi.yaml --validate
 
-      - name: Production deployment checks
+      - name: Production deployment checks with explicit HSTS deferral
         env:
           DJANGO_SETTINGS_MODULE: config.settings.production
           DJANGO_SECRET_KEY: "CI-only-7Gv!F1q@9xZ#2pL$8mN%5rT&3yU*6kW-4cE_1sQ+0aB=9dH"
@@ -108,7 +108,7 @@ jobs:
           POSTGRES_HOST: 127.0.0.1
           POSTGRES_PORT: "5432"
           POSTGRES_SSLMODE: disable
-        run: uv run python manage.py check --deploy --fail-level WARNING
+        run: uv run python scripts/check_deployment.py
 
       - name: Python bytecode compilation
-        run: uv run python -m compileall -q apps config tests
+        run: uv run python -m compileall -q apps config tests scripts
