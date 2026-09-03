@@ -208,7 +208,10 @@ def test_concurrent_reservations_cannot_oversell_same_variant() -> None:
     assert sorted(results) == [False, True]
     inventory = VariantInventory.objects.get(variant=variant)
     assert available_quantity(inventory) == 1
-    assert InventoryReservation.objects.filter(
-        inventory=inventory,
-        status=InventoryReservation.Status.ACTIVE,
-    ).count() == 1
+    assert (
+        InventoryReservation.objects.filter(
+            inventory=inventory,
+            status=InventoryReservation.Status.ACTIVE,
+        ).count()
+        == 1
+    )
