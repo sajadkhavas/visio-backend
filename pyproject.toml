@@ -37,6 +37,7 @@ select = ["E", "F", "I", "UP", "B", "DJ"]
 [tool.ruff.lint.per-file-ignores]
 "config/settings/*.py" = ["F403", "F405"]
 "apps/accounts/migrations/*.py" = ["E501"]
+"apps/catalog/migrations/*.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -49,7 +50,7 @@ plugins = ["mypy_django_plugin.main"]
 strict = true
 warn_unused_ignores = true
 show_error_codes = true
-exclude = ["apps/accounts/migrations/"]
+exclude = ["apps/accounts/migrations/", "apps/catalog/migrations/"]
 
 [[tool.mypy.overrides]]
 module = ["rest_framework.*", "drf_spectacular.*"]
@@ -61,6 +62,9 @@ module = [
   "apps.system.api_views",
   "apps.accounts.serializers",
   "apps.accounts.api_views",
+  "apps.catalog.serializers",
+  "apps.catalog.api_views",
+  "apps.catalog.pagination",
 ]
 disallow_subclassing_any = false
 
