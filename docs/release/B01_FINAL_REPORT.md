@@ -2,13 +2,17 @@
 
 Date: 2026-09-03
 
-## Acceptance decision
+## Final decision
 
-B01 implementation is **accepted for closure** after exact-head CI on the implementation SHA. Final phase status becomes `COMPLETED / MERGED / CLOSED` only after the closure-documentation head is green, the implementation PR is merged, and the post-merge main gate is green.
+B01 implementation is **COMPLETED / MERGED / POST-MERGE GREEN**.
 
-## Git baseline
+The implementation branch passed exact-head closure CI, PR #4 was merged with the expected head SHA, and the resulting `main` merge commit passed the permanent Backend Quality Gate. This evidence-only documentation update records that closure without changing application behavior.
 
-B01 START_SHA / accepted B00 application baseline:
+The live VISIO master/phase issues remain the final dynamic registry for the evidence-registration merge and B02 transition.
+
+## Git baseline and closure
+
+B01 START_SHA / accepted B00 baseline:
 
 `4b118845cdbdf8159c5ef5e97252a7a9719588f6`
 
@@ -16,11 +20,27 @@ Implementation END_SHA before closure documentation:
 
 `2bd278034af122bb3c3a485160792fd5f0f1d434`
 
+Exact implementation closure/freeze SHA / PR #4 head:
+
+`a7119da44b55632185f1795119f4c7cd5237c58e`
+
+Freeze ref:
+
+`freeze/visio-backend-b01-20260903`
+
 Implementation branch:
 
 `phase/visio-b01-identity-auth-account-address`
 
-Backend main contains two later history-only documentation create/delete commits after the B01 START_SHA. Comparison from `4b118845cdbdf8159c5ef5e97252a7a9719588f6` to backend `main` at `efeb819cd998b4630859de2335f02aa5a0e8fb74` reports **zero changed files**. No force-push or history rewrite is used; the neutral commits are preserved and recorded as evidence.
+Implementation PR:
+
+`#4 — B01: identity, authentication, account and address domain`
+
+Implementation merge SHA / accepted B01 application baseline:
+
+`af1cc61767f9f9c64d7b331630007fc414d90b1e`
+
+Backend main had two history-only documentation create/delete commits after the B01 START_SHA. Comparison from `4b118845cdbdf8159c5ef5e97252a7a9719588f6` to pre-B01 main `efeb819cd998b4630859de2335f02aa5a0e8fb74` reported **zero changed files**. Shared history was preserved; no force-push or history rewrite was used.
 
 ## Runtime contract preserved from B00
 
@@ -81,18 +101,34 @@ An earlier generated candidate exposed an unnecessary `AlterModelOptions(... opt
 
 A temporary write-enabled migration generator was used only to produce deterministic Django/Ruff artifacts. It was removed after generation. The permanent Backend Quality Gate retains read-only repository contents permission.
 
-## Exact implementation evidence
+## Exact evidence
 
-Backend Quality Gate #53 / run `33773094652` on exact implementation END_SHA `2bd278034af122bb3c3a485160792fd5f0f1d434` — **PASS**.
+### Implementation END_SHA
 
-Permanent gate evidence:
+Backend Quality Gate #53 / run `33773094652` on `2bd278034af122bb3c3a485160792fd5f0f1d434` — **PASS**.
+
+### Closure / freeze SHA
+
+Backend Quality Gate #55 / run `33773366654` on `a7119da44b55632185f1795119f4c7cd5237c58e` — **PASS**.
+
+### PR exact-head gate
+
+PR-triggered Backend Quality Gate #56 / run `33773545476` on exact PR #4 head `a7119da44b55632185f1795119f4c7cd5237c58e` — **PASS**.
+
+PR #4 was mergeable, had zero unresolved review threads, and was merged using expected head SHA `a7119da44b55632185f1795119f4c7cd5237c58e`.
+
+### Post-merge application gate
+
+Backend Quality Gate #57 / run `33773689986` on merge SHA `af1cc61767f9f9c64d7b331630007fc414d90b1e` — **PASS**.
+
+Permanent gate coverage includes:
 
 - frozen uv lock/install — PASS
 - immutable GitHub Action SHA pins — PASS
 - tracked-secret/private-key sanity — PASS
 - Ruff format — PASS
 - Ruff lint — PASS
-- strict mypy — PASS (`33` source files)
+- strict mypy — PASS (`33` source files on implementation gate)
 - Django system checks — PASS
 - migration drift (`makemigrations --check --dry-run`) — PASS / no changes detected
 - migrate from empty PostgreSQL 16.15 — PASS
@@ -101,11 +137,11 @@ Permanent gate evidence:
 - production deployment policy — PASS with only the already-explicit B00 HSTS includeSubDomains/preload deferral to R00/S00
 - Python bytecode compilation — PASS
 
-### Defects found and resolved during the gate
+## Defects found and resolved before closure
 
 1. Ruff initially rejected a missing `Address.__str__` and one overlong serializer line. Both were corrected before migration acceptance.
-2. The first clean Meta attempt used `class Meta(AbstractUser.Meta)`, which is valid as a Django abstract-model Meta inheritance pattern but is not represented by the installed `django-stubs` type surface. Rather than disabling mypy or adding a blanket ignore, B01 explicitly preserves the inherited `verbose_name` and `verbose_name_plural` metadata in a normal typed `Meta` class and keeps the B01 constraint there. Django migration drift then remained clean.
-3. The throttle test originally tried to change `REST_FRAMEWORK.DEFAULT_THROTTLE_RATES` only through a runtime settings override. DRF's `SimpleRateThrottle.THROTTLE_RATES` is a class attribute initialized from `api_settings`; the deterministic test now patches the throttle class rate mapping itself while leaving production settings unchanged. The resulting gate passed all 24 tests.
+2. The first clean Meta attempt used `class Meta(AbstractUser.Meta)`, which follows Django's abstract-model Meta inheritance pattern but is not represented by the installed `django-stubs` type surface. Rather than disabling mypy or adding a blanket ignore, B01 explicitly preserves the inherited `verbose_name` and `verbose_name_plural` metadata in a normal typed `Meta` class and keeps the B01 constraint there. Django migration drift remained clean.
+3. The throttle test originally tried to change `REST_FRAMEWORK.DEFAULT_THROTTLE_RATES` only through a runtime settings override. DRF's `SimpleRateThrottle.THROTTLE_RATES` is a class attribute initialized from `api_settings`; the deterministic test patches the throttle class rate mapping while leaving production settings unchanged. The resulting exact-head gate passed all 24 tests.
 
 ## Security and truth boundaries
 
@@ -129,9 +165,21 @@ The backend repository remains public under the B00 owner-approved visibility ex
 - DRF throttle implementation source: https://github.com/encode/django-rest-framework/blob/main/rest_framework/throttling.py
 - RFC 9457 Problem Details: https://www.rfc-editor.org/rfc/rfc9457
 
+## Final application outcome
+
+- implementation complete — YES
+- exact implementation CI — PASS
+- closure/freeze CI — PASS
+- PR #4 exact-head CI — PASS
+- unresolved review threads — 0
+- PR #4 — MERGED
+- accepted B01 application baseline — `af1cc61767f9f9c64d7b331630007fc414d90b1e`
+- post-merge application CI — PASS
+- B01 application outcome — **B01_IMPLEMENTATION_COMPLETED / MERGED / POST_MERGE_GREEN**
+
 ## NEXT
 
-After closure-head CI, PR merge, post-merge CI, and registry closure:
+After this evidence-only documentation is merged and the live master registry is updated:
 
 **B02 — Catalog, Taxonomy, Variants & Media**.
 
