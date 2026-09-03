@@ -71,8 +71,7 @@ def active_reserved_quantity(inventory: VariantInventory, *, at: datetime) -> in
     return sum(
         reservation.quantity
         for reservation in reservations
-        if reservation.status == InventoryReservation.Status.ACTIVE
-        and reservation.expires_at > at
+        if reservation.status == InventoryReservation.Status.ACTIVE and reservation.expires_at > at
     )
 
 
