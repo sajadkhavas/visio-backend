@@ -4,7 +4,7 @@ Date: 2026-09-03
 
 ## Decision
 
-B00-B has produced the production-shaped VISIO Django foundation on the dedicated backend repository. Commerce domains remain intentionally out of scope.
+B00-B has produced and merged the production-shaped VISIO Django foundation on the dedicated backend repository. Commerce domains remain intentionally out of scope.
 
 Implementation START_SHA:
 
@@ -14,9 +14,21 @@ Implementation END_SHA before closure documentation:
 
 `2a10a2894e0d823822d2a1290933dfea44dbcaf9`
 
+Exact closure/PR head:
+
+`7f9a8b08bf5cbfde30d6188eff54c7143a6d0c0b`
+
 Working branch:
 
 `phase/visio-b00-python-backend-foundation`
+
+Implementation PR:
+
+`#1 — B00: establish Python backend foundation`
+
+Implementation merge SHA:
+
+`644e0bde9e1c8b103463bc2cf76e1f842faec1ff`
 
 ## Runtime foundation
 
@@ -60,7 +72,15 @@ Temporary write-enabled bootstrap/format workflows were removed after these dete
 
 ## Exact implementation-head evidence
 
-Backend Quality Gate #12 / run `33733454632` on `2a10a2894e0d823822d2a1290933dfea44dbcaf9`:
+Backend Quality Gate #12 / run `33733454632` on `2a10a2894e0d823822d2a1290933dfea44dbcaf9` passed all permanent gates.
+
+## Exact closure-head evidence
+
+Backend Quality Gate #14 / run `33733601512` on `7f9a8b08bf5cbfde30d6188eff54c7143a6d0c0b`: **PASS**.
+
+PR-triggered Backend Quality Gate #15 / run `33735130753` on the same exact head: **PASS**.
+
+Validated gates include:
 
 - PostgreSQL 16.15 service health — PASS
 - CPython 3.13.15 setup — PASS
@@ -71,14 +91,27 @@ Backend Quality Gate #12 / run `33733454632` on `2a10a2894e0d823822d2a1290933dfe
 - secret sanity — PASS
 - Ruff format — PASS
 - Ruff lint — PASS
-- strict mypy — PASS (`25 source files`)
-- Django system check — PASS (`0 issues`)
-- migration drift — PASS (`No changes detected`)
+- strict mypy — PASS
+- Django system check — PASS
+- migration drift — PASS
 - migrate from zero — PASS, including `accounts.0001_initial`
 - pytest on PostgreSQL — PASS (`10 passed`)
 - OpenAPI generation/validation — PASS
 - production deployment-check policy — PASS
 - Python bytecode compilation — PASS
+- blocking review threads — 0
+
+## Merge and post-merge evidence
+
+PR #1 merged with expected head `7f9a8b08bf5cbfde30d6188eff54c7143a6d0c0b`.
+
+Merge SHA / accepted backend application baseline:
+
+`644e0bde9e1c8b103463bc2cf76e1f842faec1ff`
+
+Post-merge Backend Quality Gate #16 / run `33735267992` on `main` at that SHA: **PASS**.
+
+This proves the merged `main` state remains reproducible and green after the merge commit, not only on the feature branch.
 
 ## Production HSTS boundary
 
@@ -90,16 +123,25 @@ B00 is foundation only. It does not implement authentication policy, customer ac
 
 ## Repository visibility gate
 
-The canonical decision requires `sajadkhavas/visio-backend` to be private. At implementation time GitHub reports the repository as public. The connected GitHub tooling does not expose repository-visibility mutation.
+The canonical architecture decision requires `sajadkhavas/visio-backend` to be **private**.
 
-No secrets are committed, but B00 must not be declared fully closed until repository visibility is verified as private. This is a repository-setting gate, not an application-code failure.
+After PR #1 merge and post-merge verification, GitHub still reports repository visibility as `public`. The connected GitHub tooling does not expose repository-visibility mutation.
 
-## Closure sequence
+No secrets are committed and the secret-sanity gate is green. However, B00 must **not** be declared fully closed and B01 must **not** start until repository visibility is changed to Private and then verified.
 
-1. closure documentation is committed;
-2. Backend Quality Gate passes on the exact final PR head;
-3. zero blocking review threads are verified;
-4. repository visibility is private;
-5. PR merges with expected-head SHA;
-6. post-merge `main` quality gate passes;
-7. B00 START_SHA / END_SHA / PR / merge SHA and NEXT=B01 are registered in the frontend master tracker.
+This is the only remaining B00 acceptance blocker and is a GitHub repository-setting gate, not an application-code or CI failure.
+
+## Current closure state
+
+- implementation complete — YES
+- exact closure-head CI — PASS
+- PR #1 — MERGED
+- merge SHA — `644e0bde9e1c8b103463bc2cf76e1f842faec1ff`
+- post-merge `main` CI — PASS
+- unresolved review threads — 0
+- repository visibility — **BLOCKED: PUBLIC, must become PRIVATE**
+- formal B00 outcome — **NOT CLOSED YET**
+
+## NEXT
+
+Change repository visibility to Private, verify it, then register `B00_COMPLETED / MERGED / CLOSED` in frontend tracking issues #44 and #39 and advance NEXT to B01. Do not redo the backend foundation.
