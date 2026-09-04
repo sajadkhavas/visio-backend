@@ -2,7 +2,7 @@
 
 Updated: 2026-09-04
 
-This file is the backend resume roadmap. Master tracker: frontend repository Issue #39.
+This is the backend resume roadmap. Authoritative master tracker: frontend repository Issue #39.
 
 ## Accepted history
 
@@ -11,31 +11,32 @@ This file is the backend resume roadmap. Master tracker: frontend repository Iss
 - B01 — Identity/Auth/Account/Address: COMPLETED / MERGED / CLOSED
 - B02 — Catalog/Taxonomy/Variants/Media: COMPLETED / MERGED / CLOSED
 - B03 — Pricing/Inventory Integrity: COMPLETED / MERGED / FROZEN / POST-MERGE GREEN
-- B04 — Cart & Wishlist Persistence: COMPLETED / MERGED / FROZEN / POST-MERGE GREEN
+- B04 — Cart & Wishlist Persistence: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
+- B05 — Checkout, Address Validation, Shipping & Delivery: APPLICATION COMPLETED / MERGED / FROZEN / POST-MERGE GREEN; FINAL REGISTRY SYNC IN PROGRESS
 
-## B04 final evidence
+## B05 accepted application evidence
 
-- START_SHA: `f28da671850879db3d1e1f74263aeb80cac54bdc`
-- implementation END_SHA: `b4205601ad04105a6da2f6080754a8f6eefa20ba`
-- closure/freeze head: `13328a764ec2e87651bc6e7ce413a999fb6afab7`
-- freeze ref: `freeze/visio-backend-b04-20260904`
-- PR #8: merged with expected head SHA
-- accepted B04 application merge: `9a128c8f92f40f9d5b3bf3b3a493b9f59ce1c605`
-- implementation Gate #143 / `33816115318` — PASS
-- closure Gate #146 / `33816407274` — PASS
-- PR exact-head Gate #147 / `33840685756` — PASS
-- post-merge Gate #148 / `33840758239` — PASS
+- START_SHA: `edce938b6640d6dffc9730024a00dfc7a96323f5`
+- implementation branch: `phase/visio-b05-checkout-shipping-delivery`
+- implementation END_SHA: `85d76d5da90eae5e6f41e37383a0711a216f27da`
+- closure/freeze head: `9284444c6a0643c38b102d96a959e1487d33ffe3`
+- freeze ref: `freeze/visio-backend-b05-20260904`
+- backend PR #10: MERGED with expected head SHA
+- accepted B05 application merge: `29f65b552dca0dde9dbd3ee0d6b3f29439c0f479`
+- implementation Gate #169 / `33857601572` — PASS
+- closure Gate #172 / `33857779976` — PASS
+- PR exact-head Gate #173 / `33857887037` — PASS
+- application post-merge Gate #174 / `33858046748` — PASS
 - unresolved review threads: 0
-- PostgreSQL tests: 55/55 PASS
 - migration drift: 0
+- migrate-from-zero PostgreSQL 16.15: PASS
+- full PostgreSQL suite including B05 transaction/concurrency/integrity tests: PASS
 
-## Current phase
+B05 delivers authenticated checkout sessions, server-side cart repricing, user-owned address validation/snapshotting, explicit internal shipping zone/method/rate authority, explicit fail-closed tax policy, B03 inventory reservation integration, authoritative totals, create/finalize idempotency, cancellation/expiry release and a READY handoff for B06. B05 does not create orders, consume reserved inventory or interact with payment providers.
 
-B05 — Checkout, Address Validation, Shipping & Delivery — frontend Issue #53.
+## Current transition
 
-Status: **NEXT / READY TO START AFTER THIS DOCS-ONLY REGISTRY MERGE IS ACCEPTED**
-
-The accepted B04 application merge is `9a128c8f92f40f9d5b3bf3b3a493b9f59ce1c605`. This docs-only closure registry is intentionally merged after B04 application acceptance, so the exact B05 START_SHA must be the resulting backend `main` SHA after this docs PR merges and its post-merge Gate passes.
+B06 — Orders & Order Lifecycle — frontend Issue #54 is next, but its exact START_SHA is **not** the B05 application merge above. This docs-only registry branch intentionally follows application acceptance. The exact B06 START_SHA is the resulting backend `main` SHA after this registry PR is reviewed, merged with expected SHA and its post-merge Backend Quality Gate passes.
 
 ## Mandatory execution rules
 
@@ -57,27 +58,22 @@ The accepted B04 application merge is `9a128c8f92f40f9d5b3bf3b3a493b9f59ce1c605`
 
 # Remaining execution order
 
-## B05 — Checkout, Address Validation, Shipping & Delivery — Issue #53
-
-Status: **NEXT / READY TO START**
-
-Owns:
-- checkout draft/session lifecycle;
-- final server-side cart revalidation/repricing;
-- stock revalidation + InventoryReservation integration;
-- B01 address selection/eligibility;
-- shipping method/zone/rate authority;
-- delivery eligibility/window contract when justified;
-- authoritative subtotal/discount/shipping/tax/payable calculation before order creation;
-- idempotent finalize boundary for B06.
-
-Must never trust client totals, shipping cost, price snapshots or availability.
-
 ## B06 — Orders & Order Lifecycle — Issue #54
 
-Status: **REGISTERED / WAITING FOR B05**
+Status: **NEXT AFTER B05 REGISTRY ACCEPTANCE**
 
-Owns durable Order/OrderLine truth, immutable snapshots, lifecycle/state machine, idempotent creation from B05, customer history/detail, cancellation policy and reservation consume/release handoff.
+Owns:
+- durable `Order` and `OrderLine` truth;
+- immutable customer/address/product/variant/quantity/money/shipping/tax snapshots;
+- public order identifier policy;
+- explicit lifecycle/state machine;
+- idempotent order creation from B05 READY checkout;
+- exact B05 reservation consume/release handoff;
+- customer order list/detail;
+- cancellation eligibility and transitions;
+- prevention of duplicate order creation from one checkout.
+
+B06 must not invent payment success. Payment provider truth remains B07.
 
 ## B07 — Payment & Reconciliation — Issue #55
 
@@ -89,7 +85,7 @@ Owns payment attempts, provider abstraction, create/redirect/callback/verify lif
 
 Status: **REGISTERED / WAITING FOR B07**
 
-Owns backend content required by the frozen frontend, search/filter/sort, pagination and SEO-supporting public data APIs. Prefer PostgreSQL-native search unless measured evidence justifies a separate engine.
+Owns backend content required by the frozen frontend, search/filter/sort, pagination and SEO-supporting public APIs. Prefer PostgreSQL-native search unless measured evidence justifies another engine.
 
 ## B09 — Admin Operations, Notifications & Audit — Issue #57
 
@@ -101,7 +97,7 @@ Owns staff/admin workflows, role/permission matrix, audit trail and notification
 
 Status: **REGISTERED / WAITING FOR B09**
 
-Owns final backend hardening, dependency/security review, session/CSRF/rate-limit review, fail-closed production settings, health/readiness, logging, backup/restore, recovery and release runbook/freeze.
+Owns final backend hardening, dependency/security review, auth/session/CSRF/rate-limit review, fail-closed production settings, health/readiness, logging, backup/restore, recovery and release runbook/freeze.
 
 ## I00 — Full Frontend ↔ Backend Integration — Issue #59
 
@@ -129,8 +125,8 @@ Owns final production-authoritative acceptance, operations/security review, depl
 
 # Global transition rule
 
-`accepted previous main SHA → declare START_SHA → dedicated branch → official-reference audit → ADR/contracts → implementation → Django migrations → PostgreSQL tests → exact implementation-head Gate → report/handoff/learning notes → exact closure/freeze Gate → zero blocking PR threads → expected-SHA merge → post-merge main Gate → registry update → next phase`
+`accepted previous main SHA → declare START_SHA → dedicated branch → official-reference audit → ADR/contracts → implementation → Django-generated migrations → PostgreSQL tests → exact implementation-head Gate → report/handoff/learning notes → exact closure/freeze Gate → zero blocking PR threads → expected-SHA merge → post-merge main Gate → registry update → next phase`
 
 ## Resume instruction
 
-Do not redo F19 or B00–B04. After this docs-only registry PR is merged and post-merge green, use that resulting backend `main` SHA as the exact B05 START_SHA and resume from frontend Issue #53.
+Do not redo F19 or B00–B05. Complete this B05 docs-only registry acceptance first. Then use the resulting post-merge-green backend `main` SHA as the exact B06 START_SHA, create the dedicated B06 branch and resume from frontend Issue #54.
