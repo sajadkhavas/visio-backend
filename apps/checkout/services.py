@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 from uuid import UUID
 
@@ -148,7 +148,9 @@ def _resolve_zone(address: Address, *, lock: bool) -> ShippingZone:
     best_specificity = max(item[0] for item in matches)
     best = [zone for specificity, zone in matches if specificity == best_specificity]
     if len(best) != 1:
-        raise ShippingConfigurationError("Shipping zone configuration is ambiguous for this address.")
+        raise ShippingConfigurationError(
+            "Shipping zone configuration is ambiguous for this address."
+        )
     return best[0]
 
 
@@ -163,7 +165,9 @@ def _active_tax_policy(country_code: str, *, lock: bool) -> CheckoutTaxPolicy:
     if not policies:
         raise TaxPolicyUnavailableError("No active tax policy is configured for this destination.")
     if len(policies) != 1:
-        raise TaxPolicyUnavailableError("Tax policy configuration is ambiguous for this destination.")
+        raise TaxPolicyUnavailableError(
+            "Tax policy configuration is ambiguous for this destination."
+        )
     return policies[0]
 
 
@@ -172,7 +176,11 @@ def _method_for_zone(zone: ShippingZone, method_code: str, *, lock: bool) -> Shi
     if lock:
         queryset = queryset.select_for_update()
     code = method_code.strip().casefold()
-    matches = [method for method in queryset.order_by("sort_order", "code", "id") if method.code.casefold() == code]
+    matches = [
+        method
+        for method in queryset.order_by("sort_order", "code", "id")
+        if method.code.casefold() == code
+    ]
     if not matches:
         raise ShippingConfigurationError("Selected shipping method is not active for this address.")
     if len(matches) != 1:
@@ -235,7 +243,9 @@ def _locked_cart_and_prices(user: User) -> tuple[Cart, list[PricedCartLine], int
             raise CheckoutUnavailableError("Cart contains a variant that is no longer purchasable.")
         price = price_by_variant.get(line.variant_id)
         if price is None:
-            raise CheckoutUnavailableError("Cart contains a variant without active server price truth.")
+            raise CheckoutUnavailableError(
+                "Cart contains a variant without active server price truth."
+            )
         unit_price = int(price.amount_toman)
         priced.append(PricedCartLine(line=line, unit_price_toman=unit_price))
         subtotal += unit_price * line.quantity
@@ -277,7 +287,9 @@ def shipping_quotes(user: User, address_id: int) -> list[ShippingQuote]:
         policy = _active_tax_policy(address.country_code, lock=True)
         methods = _methods_for_zone(zone, lock=True)
         if not methods:
-            raise ShippingConfigurationError("No active shipping method is configured for this address.")
+            raise ShippingConfigurationError(
+                "No active shipping method is configured for this address."
+            )
         return [_quote(method, subtotal_toman=subtotal, policy=policy) for method in methods]
 
 
@@ -328,7 +340,10 @@ def create_checkout(
         )
         if existing is not None:
             original_code = str(existing.shipping_snapshot.get("code", ""))
-            if existing.address_id != address_id or original_code.casefold() != method_code.casefold():
+            if (
+                existing.address_id != address_id
+                or original_code.casefold() != method_code.casefold()
+            ):
                 raise CheckoutConflictError(
                     "This checkout idempotency key was already used with different inputs."
                 )
@@ -453,7 +468,9 @@ def _revalidate_ready_boundary(
         raise CheckoutStaleError("Checkout reservations have expired.")
 
     try:
-        cart = Cart.objects.select_for_update().get(pk=session.cart_id, user=user, status=Cart.Status.ACTIVE)
+        cart = Cart.objects.select_for_update().get(
+            pk=session.cart_id, user=user, status=Cart.Status.ACTIVE
+        )
     except Cart.DoesNotExist as exc:
         raise CheckoutStaleError("Checkout cart is no longer active.") from exc
     if cart.revision != session.cart_revision:
@@ -465,7 +482,10 @@ def _revalidate_ready_boundary(
 
     zone = _resolve_zone(address, lock=True)
     method = _method_for_zone(zone, session.shipping_method.code, lock=True)
-    if method.pk != session.shipping_method_id or shipping_snapshot(method) != session.shipping_snapshot:
+    if (
+        method.pk != session.shipping_method_id
+        or shipping_snapshot(method) != session.shipping_snapshot
+    ):
         raise CheckoutStaleError("Shipping configuration changed after checkout validation.")
 
     tax_policy = _active_tax_policy(address.country_code, lock=True)
@@ -485,7 +505,10 @@ def _revalidate_ready_boundary(
             raise CheckoutStaleError("Cart quantities changed after checkout validation.")
         if int(checkout_line.unit_price_toman) != priced_line.unit_price_toman:
             raise CheckoutStaleError("Price changed after checkout validation.")
-        if int(checkout_line.line_total_toman) != priced_line.unit_price_toman * priced_line.line.quantity:
+        if (
+            int(checkout_line.line_total_toman)
+            != priced_line.unit_price_toman * priced_line.line.quantity
+        ):
             raise CheckoutStaleError("Checkout line total is stale.")
 
     inventory_rows = list(
@@ -562,14 +585,14 @@ def finalize_checkout(
                 return session
             raise CheckoutConflictError("Checkout was already finalized with a different key.")
         if session.status != CheckoutSession.Status.ACTIVE:
-            raise CheckoutConflictError(f"Checkout in state {session.status!r} cannot be finalized.")
+            raise CheckoutConflictError(
+                f"Checkout in state {session.status!r} cannot be finalized."
+            )
 
         _revalidate_ready_boundary(user, session, at=now)
         session.status = CheckoutSession.Status.READY
         session.finalization_key = idempotency_key
         session.finalized_at = now
         session.updated_at = now
-        session.save(
-            update_fields=("status", "finalization_key", "finalized_at", "updated_at")
-        )
+        session.save(update_fields=("status", "finalization_key", "finalized_at", "updated_at"))
         return session

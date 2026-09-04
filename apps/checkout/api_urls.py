@@ -9,7 +9,11 @@ from .api_views import (
 )
 
 urlpatterns = [
-    path("checkout/shipping-options/", ShippingOptionsView.as_view(), name="checkout-shipping-options"),
+    path(
+        "checkout/shipping-options/",
+        ShippingOptionsView.as_view(),
+        name="checkout-shipping-options",
+    ),
     path("checkout/current/", CurrentCheckoutView.as_view(), name="checkout-current"),
     path("checkout/sessions/", CheckoutCreateView.as_view(), name="checkout-create"),
     path(

@@ -5,7 +5,6 @@ from uuid import UUID, uuid4
 
 import pytest
 from apps.accounts.models import Address, User
-from apps.cart.models import Cart
 from apps.cart.services import add_cart_line
 from apps.catalog.models import Brand, Category, Product, ProductVariant
 from apps.checkout.models import (
@@ -256,7 +255,9 @@ def test_checkout_create_is_idempotent_and_rejects_key_reuse_with_different_inpu
     )
 
     assert second.pk == first.pk
-    assert InventoryReservation.objects.filter(status=InventoryReservation.Status.ACTIVE).count() == 1
+    assert (
+        InventoryReservation.objects.filter(status=InventoryReservation.Status.ACTIVE).count() == 1
+    )
 
     with pytest.raises(CheckoutConflictError):
         create_checkout(
@@ -509,8 +510,7 @@ def test_concurrent_checkouts_cannot_oversell_shared_inventory() -> None:
 
     assert sorted(results) == ["success", "unavailable"]
     assert (
-        InventoryReservation.objects.filter(status=InventoryReservation.Status.ACTIVE).count()
-        == 1
+        InventoryReservation.objects.filter(status=InventoryReservation.Status.ACTIVE).count() == 1
     )
     assert CheckoutSession.objects.filter(status=CheckoutSession.Status.ACTIVE).count() == 1
     inventory = VariantInventory.objects.get(variant=variant)
