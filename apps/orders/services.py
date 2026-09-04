@@ -122,9 +122,7 @@ def _existing_order_for_request(
     idempotency_key: UUID,
 ) -> Order | None:
     by_key = (
-        Order.objects.select_for_update()
-        .filter(user=user, idempotency_key=idempotency_key)
-        .first()
+        Order.objects.select_for_update().filter(user=user, idempotency_key=idempotency_key).first()
     )
     if by_key is not None:
         if by_key.checkout_id != checkout_id:
@@ -294,7 +292,9 @@ def cancel_order(
         if order.status == Order.Status.CANCELLED:
             return order
         if order.status != Order.Status.PENDING_PAYMENT:
-            raise OrderTransitionError("Only a pending-payment order can be cancelled by its customer.")
+            raise OrderTransitionError(
+                "Only a pending-payment order can be cancelled by its customer."
+            )
 
         for line in _order_lines_for_transition(order):
             release_reservation(line.reservation_id, at=now)
