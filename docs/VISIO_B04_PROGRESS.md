@@ -1,69 +1,58 @@
 # VISIO B04 — Cart & Wishlist Persistence
 
-## Current Phase
+## Final State
 
-B04 has started from the frozen B03 backend baseline.
+B04 is **COMPLETED / MERGED / FROZEN / POST-MERGE GREEN**.
 
-## Baseline
+## Final coordinates
 
-- Previous accepted backend merge: `f28da671850879db3d1e1f74263aeb80cac54bdc`
-- Branch: `phase/visio-b04-cart-wishlist-persistence`
+- START_SHA: `f28da671850879db3d1e1f74263aeb80cac54bdc`
+- implementation branch: `phase/visio-b04-cart-wishlist-persistence`
+- implementation END_SHA: `b4205601ad04105a6da2f6080754a8f6eefa20ba`
+- closure/freeze head: `13328a764ec2e87651bc6e7ce413a999fb6afab7`
+- freeze ref: `freeze/visio-backend-b04-20260904`
+- PR #8: MERGED with expected head SHA
+- accepted B04 application merge: `9a128c8f92f40f9d5b3bf3b3a493b9f59ce1c605`
 
-## Completed before implementation
+## Gate evidence
 
-- B00 Backend Foundation: completed
-- B01 Auth/User foundation: completed
-- B02 Catalog: completed
-- B03 Pricing & Inventory Integrity: completed
+- implementation Gate #143 / run `33816115318` — PASS
+- closure Gate #146 / run `33816407274` — PASS
+- PR exact-head Gate #147 / run `33840685756` — PASS
+- post-merge main Gate #148 / run `33840758239` — PASS
+- unresolved PR review threads: 0
+- PostgreSQL full suite: 55/55 PASS
+- migration drift: 0
+- migrate-from-empty PostgreSQL 16.15: PASS
+- Ruff / strict mypy / Django / OpenAPI / deployment / secret/action-pin gates: PASS
 
-## B04 Scope
+## Accepted domain behavior
 
-B04 is divided into:
+- authenticated Cart / CartLine / Wishlist persistence
+- one active cart per user DB invariant
+- one variant per cart line DB invariant
+- quantity constrained to 1..99
+- add / set / remove / clear cart operations
+- bounded deterministic browser-cart import/merge
+- idempotent wishlist list/add/remove
+- cross-user isolation
+- B03 server-authoritative price/availability projection
+- client price snapshots never become server authority
+- ordinary cart mutation creates no InventoryReservation
+- Django 5.2.17 generated migration
+- PostgreSQL integrity/concurrency/ownership tests
 
-### B04-A — Cart Domain Foundation
+## Documentation
 
-- Cart domain
-- CartItem domain
-- PostgreSQL constraints
-- Django migrations
-- Cart service layer
-- Database integrity tests
+- `docs/architecture/B04_CART_WISHLIST_DECISIONS.md`
+- `docs/learning/B04_CART_WISHLIST_NOTES.md`
+- `docs/release/B04_FINAL_REPORT.md`
+- `docs/handoffs/VISIO-B04-CART-WISHLIST-PERSISTENCE-2026-09-04.md`
 
-### B04-B — Cart API
+## NEXT
 
-- API contracts
-- Validation
-- Ownership isolation
+B05 — Checkout, Address Validation, Shipping & Delivery — frontend master Issue #53.
 
-### B04-C — Wishlist
+The accepted B04 application merge is `9a128c8f92f40f9d5b3bf3b3a493b9f59ce1c605`. Because this closure registry is being merged through a docs-only PR after application acceptance, the exact B05 START_SHA must be the resulting post-registry backend `main` SHA after its post-merge Gate passes.
 
-- WishlistItem
-- Duplicate prevention
-- API integration
-
-### B04-D — Acceptance
-
-- Ruff
-- mypy strict
-- Django checks
-- migration drift
-- PostgreSQL tests
-- PR review
-- Merge verification
-
-## Current State
-
-B04-A is active.
-
-Repository architecture was reviewed before implementation:
-
-- Existing apps: accounts, catalog, commerce, system
-- Cart will integrate with ProductVariant from catalog.
-- Cart does not reserve inventory; reservation remains part of checkout/order flow.
-
-## Rules
-
-- No direct main changes.
-- No manual migration bypass.
-- Django generated migrations only.
-- Completion requires CI, merge and post-merge verification.
+Do not redo B04.
