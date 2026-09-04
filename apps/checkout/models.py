@@ -77,8 +77,7 @@ class ShippingMethod(models.Model):
             ),
             models.CheckConstraint(
                 condition=(
-                    models.Q(free_over_toman__isnull=True)
-                    | models.Q(free_over_toman__gte=0)
+                    models.Q(free_over_toman__isnull=True) | models.Q(free_over_toman__gte=0)
                 ),
                 name="checkout_method_free_over_nonnegative",
             ),
@@ -152,7 +151,7 @@ class CheckoutSession(models.Model):
         related_name="checkout_sessions",
     )
     idempotency_key = models.UUIDField()
-    finalization_key = models.UUIDField(null=True, blank=True, unique=True)
+    finalization_key = models.UUIDField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     cart_revision = models.PositiveBigIntegerField()
     subtotal_toman = models.DecimalField(max_digits=18, decimal_places=0)
@@ -174,6 +173,11 @@ class CheckoutSession(models.Model):
             models.UniqueConstraint(
                 fields=("user", "idempotency_key"),
                 name="checkout_user_create_key_unique",
+            ),
+            models.UniqueConstraint(
+                fields=("user", "finalization_key"),
+                condition=models.Q(finalization_key__isnull=False),
+                name="checkout_user_finalize_key_unique",
             ),
             models.UniqueConstraint(
                 fields=("user",),
@@ -265,6 +269,12 @@ class CheckoutLine(models.Model):
             models.CheckConstraint(
                 condition=models.Q(line_total_toman__gte=0),
                 name="checkout_line_total_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    line_total_toman=models.F("unit_price_toman") * models.F("quantity")
+                ),
+                name="checkout_line_total_components",
             ),
         ]
 
