@@ -16,10 +16,6 @@ def orders_for_user(user: User) -> QuerySet[Order]:
 
 def order_for_user(user: User, public_id: UUID) -> Order:
     try:
-        return (
-            Order.objects.filter(user=user)
-            .prefetch_related("lines")
-            .get(public_id=public_id)
-        )
+        return Order.objects.filter(user=user).prefetch_related("lines").get(public_id=public_id)
     except Order.DoesNotExist as exc:
         raise OrderNotFoundError("Order does not exist for this user.") from exc
