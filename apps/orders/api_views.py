@@ -39,12 +39,16 @@ def _user(request: Request) -> User:
 class OrderCollectionView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(operation_id="orders_list", responses={200: OpenApiTypes.OBJECT})
     def get(self, request: Request) -> Response:
         orders = orders_for_user(_user(request))
         return Response({"orders": [order_payload(order, include_lines=False) for order in orders]})
 
-    @extend_schema(request=OrderCreateSerializer, responses={201: OpenApiTypes.OBJECT})
+    @extend_schema(
+        operation_id="orders_create",
+        request=OrderCreateSerializer,
+        responses={201: OpenApiTypes.OBJECT},
+    )
     def post(self, request: Request) -> Response:
         serializer = OrderCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -70,7 +74,7 @@ class OrderCollectionView(APIView):
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(operation_id="orders_retrieve", responses={200: OpenApiTypes.OBJECT})
     def get(self, request: Request, public_id: UUID) -> Response:
         try:
             order = order_for_user(_user(request), public_id)
@@ -82,7 +86,11 @@ class OrderDetailView(APIView):
 class OrderCancelView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        operation_id="orders_cancel",
+        request=None,
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def post(self, request: Request, public_id: UUID) -> Response:
         try:
             cancel_order(_user(request), public_id)
