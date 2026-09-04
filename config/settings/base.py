@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "apps.catalog.apps.CatalogConfig",
     "apps.commerce.apps.CommerceConfig",
     "apps.cart.apps.CartConfig",
+    "apps.checkout.apps.CheckoutConfig",
     "apps.system.apps.SystemConfig",
 ]
 
