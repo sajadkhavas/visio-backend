@@ -9,127 +9,239 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('checkout', '0001_initial'),
-        ('commerce', '0001_initial'),
+        ("checkout", "0001_initial"),
+        ("commerce", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Order',
+            name="Order",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('public_id', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('idempotency_key', models.UUIDField()),
-                ('status', models.CharField(choices=[('pending_payment', 'Pending payment'), ('confirmed', 'Confirmed'), ('processing', 'Processing'), ('shipped', 'Shipped'), ('delivered', 'Delivered'), ('cancelled', 'Cancelled'), ('expired', 'Expired')], default='pending_payment', max_length=24)),
-                ('status_changed_at', models.DateTimeField(default=django.utils.timezone.now)),
-                ('customer_snapshot', models.JSONField()),
-                ('address_snapshot', models.JSONField()),
-                ('shipping_snapshot', models.JSONField()),
-                ('subtotal_toman', models.DecimalField(decimal_places=0, max_digits=18)),
-                ('discount_toman', models.DecimalField(decimal_places=0, default=0, max_digits=18)),
-                ('shipping_toman', models.DecimalField(decimal_places=0, max_digits=18)),
-                ('tax_toman', models.DecimalField(decimal_places=0, max_digits=18)),
-                ('payable_toman', models.DecimalField(decimal_places=0, max_digits=18)),
-                ('tax_rate_bps', models.PositiveSmallIntegerField()),
-                ('currency_code', models.CharField(default='IRR', max_length=3)),
-                ('display_unit', models.CharField(default='تومان', max_length=16)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('checkout', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='order', to='checkout.checkoutsession')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='orders', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("public_id", models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
+                ("idempotency_key", models.UUIDField()),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending_payment", "Pending payment"),
+                            ("confirmed", "Confirmed"),
+                            ("processing", "Processing"),
+                            ("shipped", "Shipped"),
+                            ("delivered", "Delivered"),
+                            ("cancelled", "Cancelled"),
+                            ("expired", "Expired"),
+                        ],
+                        default="pending_payment",
+                        max_length=24,
+                    ),
+                ),
+                ("status_changed_at", models.DateTimeField(default=django.utils.timezone.now)),
+                ("customer_snapshot", models.JSONField()),
+                ("address_snapshot", models.JSONField()),
+                ("shipping_snapshot", models.JSONField()),
+                ("subtotal_toman", models.DecimalField(decimal_places=0, max_digits=18)),
+                ("discount_toman", models.DecimalField(decimal_places=0, default=0, max_digits=18)),
+                ("shipping_toman", models.DecimalField(decimal_places=0, max_digits=18)),
+                ("tax_toman", models.DecimalField(decimal_places=0, max_digits=18)),
+                ("payable_toman", models.DecimalField(decimal_places=0, max_digits=18)),
+                ("tax_rate_bps", models.PositiveSmallIntegerField()),
+                ("currency_code", models.CharField(default="IRR", max_length=3)),
+                ("display_unit", models.CharField(default="تومان", max_length=16)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "checkout",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="order",
+                        to="checkout.checkoutsession",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="orders",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-created_at', 'id'),
+                "ordering": ("-created_at", "id"),
             },
         ),
         migrations.CreateModel(
-            name='OrderLine',
+            name="OrderLine",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('source_product_id', models.UUIDField()),
-                ('source_product_slug', models.CharField(max_length=180)),
-                ('source_product_name', models.CharField(max_length=220)),
-                ('source_variant_id', models.UUIDField()),
-                ('source_variant_sku', models.CharField(blank=True, max_length=120)),
-                ('option_snapshot', models.JSONField(default=dict)),
-                ('quantity', models.PositiveSmallIntegerField()),
-                ('unit_price_toman', models.DecimalField(decimal_places=0, max_digits=18)),
-                ('line_total_toman', models.DecimalField(decimal_places=0, max_digits=18)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lines', to='orders.order')),
-                ('reservation', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='order_line', to='commerce.inventoryreservation')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("source_product_id", models.UUIDField()),
+                ("source_product_slug", models.CharField(max_length=180)),
+                ("source_product_name", models.CharField(max_length=220)),
+                ("source_variant_id", models.UUIDField()),
+                ("source_variant_sku", models.CharField(blank=True, max_length=120)),
+                ("option_snapshot", models.JSONField(default=dict)),
+                ("quantity", models.PositiveSmallIntegerField()),
+                ("unit_price_toman", models.DecimalField(decimal_places=0, max_digits=18)),
+                ("line_total_toman", models.DecimalField(decimal_places=0, max_digits=18)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "order",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="lines",
+                        to="orders.order",
+                    ),
+                ),
+                (
+                    "reservation",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="order_line",
+                        to="commerce.inventoryreservation",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('source_variant_id', 'id'),
+                "ordering": ("source_variant_id", "id"),
             },
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.UniqueConstraint(fields=('user', 'idempotency_key'), name='orders_user_create_key_unique'),
+            model_name="order",
+            constraint=models.UniqueConstraint(
+                fields=("user", "idempotency_key"), name="orders_user_create_key_unique"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('subtotal_toman__gte', 0)), name='orders_subtotal_nonnegative'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("subtotal_toman__gte", 0)), name="orders_subtotal_nonnegative"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('discount_toman__gte', 0)), name='orders_discount_nonnegative'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("discount_toman__gte", 0)), name="orders_discount_nonnegative"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('discount_toman__lte', models.F('subtotal_toman'))), name='orders_discount_within_subtotal'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("discount_toman__lte", models.F("subtotal_toman"))),
+                name="orders_discount_within_subtotal",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('shipping_toman__gte', 0)), name='orders_shipping_nonnegative'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("shipping_toman__gte", 0)), name="orders_shipping_nonnegative"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('tax_toman__gte', 0)), name='orders_tax_nonnegative'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("tax_toman__gte", 0)), name="orders_tax_nonnegative"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('payable_toman__gte', 0)), name='orders_payable_nonnegative'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("payable_toman__gte", 0)), name="orders_payable_nonnegative"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('tax_rate_bps__lte', 10000)), name='orders_tax_rate_bounded'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("tax_rate_bps__lte", 10000)), name="orders_tax_rate_bounded"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('payable_toman', django.db.models.expressions.CombinedExpression(django.db.models.expressions.CombinedExpression(django.db.models.expressions.CombinedExpression(models.F('subtotal_toman'), '-', models.F('discount_toman')), '+', models.F('shipping_toman')), '+', models.F('tax_toman')))), name='orders_payable_components'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    (
+                        "payable_toman",
+                        django.db.models.expressions.CombinedExpression(
+                            django.db.models.expressions.CombinedExpression(
+                                django.db.models.expressions.CombinedExpression(
+                                    models.F("subtotal_toman"), "-", models.F("discount_toman")
+                                ),
+                                "+",
+                                models.F("shipping_toman"),
+                            ),
+                            "+",
+                            models.F("tax_toman"),
+                        ),
+                    )
+                ),
+                name="orders_payable_components",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('currency_code', 'IRR')), name='orders_currency_irr'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("currency_code", "IRR")), name="orders_currency_irr"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='order',
-            constraint=models.CheckConstraint(condition=models.Q(('display_unit', 'تومان')), name='orders_display_unit_toman'),
+            model_name="order",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("display_unit", "تومان")), name="orders_display_unit_toman"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='orderline',
-            constraint=models.UniqueConstraint(fields=('order', 'source_variant_id'), name='orders_line_variant_unique'),
+            model_name="orderline",
+            constraint=models.UniqueConstraint(
+                fields=("order", "source_variant_id"), name="orders_line_variant_unique"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='orderline',
-            constraint=models.CheckConstraint(condition=models.Q(('quantity__gte', 1), ('quantity__lte', 99)), name='orders_line_quantity_bounded'),
+            model_name="orderline",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("quantity__gte", 1), ("quantity__lte", 99)),
+                name="orders_line_quantity_bounded",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='orderline',
-            constraint=models.CheckConstraint(condition=models.Q(('unit_price_toman__gte', 0)), name='orders_line_price_nonnegative'),
+            model_name="orderline",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("unit_price_toman__gte", 0)),
+                name="orders_line_price_nonnegative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='orderline',
-            constraint=models.CheckConstraint(condition=models.Q(('line_total_toman__gte', 0)), name='orders_line_total_nonnegative'),
+            model_name="orderline",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("line_total_toman__gte", 0)),
+                name="orders_line_total_nonnegative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='orderline',
-            constraint=models.CheckConstraint(condition=models.Q(('line_total_toman', django.db.models.expressions.CombinedExpression(models.F('unit_price_toman'), '*', models.F('quantity')))), name='orders_line_total_components'),
+            model_name="orderline",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    (
+                        "line_total_toman",
+                        django.db.models.expressions.CombinedExpression(
+                            models.F("unit_price_toman"), "*", models.F("quantity")
+                        ),
+                    )
+                ),
+                name="orders_line_total_components",
+            ),
         ),
     ]
