@@ -1,0 +1,77 @@
+name: B05 Django Migration + Formatter
+
+on:
+  push:
+    branches:
+      - phase/visio-b05-checkout-shipping-delivery
+    paths:
+      - ".github/workflows/b05-generator-format.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      POSTGRES_DB: visio_b05
+      POSTGRES_USER: visio_b05
+      POSTGRES_PASSWORD: visio_b05
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    services:
+      postgres:
+        image: postgres:16.15-bookworm
+        env:
+          POSTGRES_DB: visio_b05
+          POSTGRES_USER: visio_b05
+          POSTGRES_PASSWORD: visio_b05
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U visio_b05 -d visio_b05"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: phase/visio-b05-checkout-shipping-delivery
+          fetch-depth: 0
+
+      - name: Set up exact Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+
+      - name: Install frozen environment
+        run: |
+          python -m pip install --disable-pip-version-check "uv==0.12.9"
+          uv sync --frozen --all-groups
+
+      - name: Generate migration with accepted Django
+        run: uv run python manage.py makemigrations checkout
+
+      - name: Format and mechanically fix B05 files
+        run: |
+          uv run ruff format apps/checkout tests/test_b05_checkout.py config/urls.py
+          uv run ruff check --fix apps/checkout tests/test_b05_checkout.py config/urls.py
+          uv run ruff format apps/checkout tests/test_b05_checkout.py config/urls.py
+
+      - name: Commit generated and formatted B05 delta
+        run: |
+          set -Eeuo pipefail
+          git add apps/checkout tests/test_b05_checkout.py config/urls.py
+          if git diff --cached --quiet; then
+            echo "Expected B05 generated/formatted delta is empty."
+            exit 1
+          fi
+          git config user.name "sajadkhavas"
+          git config user.email "144109918+sajadkhavas@users.noreply.github.com"
+          git commit -m "B05: generate migration and format checkout implementation"
+          git push origin HEAD:phase/visio-b05-checkout-shipping-delivery
