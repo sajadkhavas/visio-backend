@@ -354,7 +354,10 @@ def test_order_api_is_authenticated_user_scoped_and_has_no_payment_confirm_route
     other_client = authenticated_client(other)
     assert other_client.get(detail_path).status_code == 404
     assert other_client.post(cancel_path, content_type="application/json").status_code == 404
-    assert owner_client.post(f"{detail_path}confirm/", content_type="application/json").status_code == 404
+    assert (
+        owner_client.post(f"{detail_path}confirm/", content_type="application/json").status_code
+        == 404
+    )
 
 
 def test_order_create_api_accepts_only_checkout_identity_and_server_snapshots() -> None:
