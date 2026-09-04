@@ -38,6 +38,8 @@ select = ["E", "F", "I", "UP", "B", "DJ"]
 "config/settings/*.py" = ["F403", "F405"]
 "apps/accounts/migrations/*.py" = ["E501"]
 "apps/catalog/migrations/*.py" = ["E501"]
+"apps/commerce/migrations/*.py" = ["E501"]
+"apps/cart/migrations/*.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -50,7 +52,12 @@ plugins = ["mypy_django_plugin.main"]
 strict = true
 warn_unused_ignores = true
 show_error_codes = true
-exclude = ["apps/accounts/migrations/", "apps/catalog/migrations/"]
+exclude = [
+  "apps/accounts/migrations/",
+  "apps/catalog/migrations/",
+  "apps/commerce/migrations/",
+  "apps/cart/migrations/",
+]
 
 [[tool.mypy.overrides]]
 module = ["rest_framework.*", "drf_spectacular.*"]
@@ -65,6 +72,8 @@ module = [
   "apps.catalog.serializers",
   "apps.catalog.api_views",
   "apps.catalog.pagination",
+  "apps.cart.serializers",
+  "apps.cart.api_views",
 ]
 disallow_subclassing_any = false
 
