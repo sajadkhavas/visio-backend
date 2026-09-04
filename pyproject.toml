@@ -40,6 +40,7 @@ select = ["E", "F", "I", "UP", "B", "DJ"]
 "apps/catalog/migrations/*.py" = ["E501"]
 "apps/commerce/migrations/*.py" = ["E501"]
 "apps/cart/migrations/*.py" = ["E501"]
+"apps/checkout/migrations/*.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -57,6 +58,7 @@ exclude = [
   "apps/catalog/migrations/",
   "apps/commerce/migrations/",
   "apps/cart/migrations/",
+  "apps/checkout/migrations/",
 ]
 
 [[tool.mypy.overrides]]
@@ -74,6 +76,8 @@ module = [
   "apps.catalog.pagination",
   "apps.cart.serializers",
   "apps.cart.api_views",
+  "apps.checkout.serializers",
+  "apps.checkout.api_views",
 ]
 disallow_subclassing_any = false
 
