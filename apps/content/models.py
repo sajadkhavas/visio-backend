@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
@@ -89,6 +90,10 @@ class ContentEntry(models.Model):
     def __str__(self) -> str:
         return f"{self.kind}:{self.slug}"
 
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.search_text = self.rebuild_search_text()
+        super().save(*args, **kwargs)
+
     def clean(self) -> None:
         super().clean()
         errors: dict[str, str] = {}
@@ -120,7 +125,3 @@ class ContentEntry(models.Model):
         for value in fields:
             terms.extend(_flatten_text(value))
         return "\n".join(term.strip() for term in terms if term.strip())
-
-    def save(self, *args: object, **kwargs: object) -> None:
-        self.search_text = self.rebuild_search_text()
-        super().save(*args, **kwargs)
