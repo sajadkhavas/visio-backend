@@ -67,6 +67,9 @@ class AuditEvent(models.Model):
             ("verify_audit_chain", "Can verify the operational audit chain"),
         ]
 
+    def __str__(self) -> str:
+        return f"#{self.sequence} {self.action} {self.object_type}:{self.object_id}"
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         if not self._state.adding:
             raise ValidationError("Audit events are append-only and cannot be updated.")
@@ -74,9 +77,6 @@ class AuditEvent(models.Model):
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         raise ValidationError("Audit events are append-only and cannot be deleted.")
-
-    def __str__(self) -> str:
-        return f"#{self.sequence} {self.action} {self.object_type}:{self.object_id}"
 
 
 class NotificationOutbox(models.Model):
@@ -155,6 +155,9 @@ class NotificationDeliveryAttempt(models.Model):
             ),
         ]
 
+    def __str__(self) -> str:
+        return f"{self.notification_id} attempt {self.attempt_no}: {self.result}"
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         if not self._state.adding:
             raise ValidationError("Notification delivery attempts are append-only.")
@@ -162,6 +165,3 @@ class NotificationDeliveryAttempt(models.Model):
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         raise ValidationError("Notification delivery attempts are append-only.")
-
-    def __str__(self) -> str:
-        return f"{self.notification_id} attempt {self.attempt_no}: {self.result}"
