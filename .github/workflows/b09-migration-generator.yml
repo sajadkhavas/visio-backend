@@ -56,3 +56,5 @@ jobs:
           git diff --cached --check
           git commit -m 'B09: add Django 5.2.17 generated operations migration'
           git push origin HEAD:phase/visio-b09-admin-notifications-audit
+      - name: Confirm Django runtime
+        run: uv run python -c "import django; assert django.get_version() == '5.2.17'"
