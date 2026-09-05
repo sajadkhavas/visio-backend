@@ -14,31 +14,31 @@ This is the backend resume roadmap. Authoritative master tracker: frontend repos
 - B04 — Cart & Wishlist Persistence: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
 - B05 — Checkout, Address Validation, Shipping & Delivery: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
 - B06 — Orders & Order Lifecycle: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
-- B07 — Payment & Reconciliation: APPLICATION COMPLETED / MERGED / FROZEN / POST-MERGE GREEN; FINAL REGISTRY SYNC IN PROGRESS
+- B07 — Payment & Reconciliation: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
+- B08 — Content, Search & Public Data APIs: APPLICATION COMPLETED / MERGED / FROZEN / POST-MERGE GREEN; FINAL REGISTRY SYNC IN PROGRESS
 
-## B07 accepted application evidence
+## B08 accepted application evidence
 
-- START_SHA: `1269be71e7abcde4f01700f7809c416cefcc49e2`
-- implementation branch: `phase/visio-b07-payment-reconciliation`
-- implementation END_SHA: `9470ccd25bafce793c9b6e6e2f6d3309c8c1772e`
-- closure/freeze head: `b2230b696c7e587dbaf08d4dc80d3d6a47718b28`
-- freeze ref: `freeze/visio-backend-b07-20260905`
-- backend application PR #14: MERGED with expected head SHA
-- accepted B07 application merge: `b7dd550c1bf7e6a543f8a7f348dd8ddc73669c6a`
-- implementation Gate #250 / `33978360189` — PASS
-- closure Gate #254 / `33978559625` — PASS
-- PR exact-head Gate #255 / `33978620868` — PASS
-- application post-merge Gate #256 / `33978686790` — PASS
+- START_SHA: `6f921cb0a0dfd4e442a3d195ad70b7dc476cf348`
+- implementation branch: `phase/visio-b08-content-search-public-data`
+- implementation END_SHA: `c300ea1ef55533a010d98399160d7cdd5093e7f5`
+- closure/freeze head: `d49cc5fcddbbdf1369e1c87ae5457e6cd5361ca6`
+- freeze ref: `freeze/visio-backend-b08-20260905`
+- backend application PR #16: MERGED with expected head SHA
+- accepted B08 application merge: `8085d050835a429bb5023959a37d9ad66f46ef44`
+- implementation Gate #289 / `33981548113` — PASS
+- closure / exact-head Gate #297 / `33981702876` — PASS
+- application post-merge Gate #298 / `33981807980` — PASS
 - unresolved review threads: 0
 - migration drift: 0
 - migrate-from-zero PostgreSQL 16.15: PASS
-- full PostgreSQL suite: 91/91 PASS
+- full PostgreSQL suite: 96/96 PASS
 
-B07 delivers durable payment attempts and reconciliation evidence, official-contract ZarinPal request/verify/reversal/refund adapter boundaries, fail-closed production configuration, exact Toman→IRR conversion, authoritative provider verification, duplicate-effect/idempotency protection and mismatch-safe preservation of real verified payment truth before B06 Order/inventory confirmation.
+B08 delivers durable backend public-content authority, explicit publication visibility, frontend-shaped guide/magazine/policy payloads with SEO metadata, bounded content filtering/search/sort/pagination, and backend-authoritative catalog `q` search while preserving B02 publication/media visibility, B03 commerce truth and B07 payment/provider truth. Frontend local fixtures remain non-authoritative until I00 wires accepted APIs.
 
 ## Current transition
 
-B08 — Content, Search & Public Data APIs — frontend Issue #56 is next, but its exact START_SHA is **not** the B07 application merge above. This docs-only registry branch intentionally follows application acceptance. The exact B08 START_SHA is the resulting backend `main` SHA after this registry PR is reviewed, exact-head green, merged with expected SHA and its post-merge Backend Quality Gate passes.
+B09 — Admin Operations, Notifications & Audit — frontend Issue #57 is next, but its exact START_SHA is **not** the B08 application merge above. This docs-only registry branch intentionally follows application acceptance. The exact B09 START_SHA is the resulting backend `main` SHA after this registry PR is exact-head green, merged with expected SHA and its post-merge Backend Quality Gate passes.
 
 ## Mandatory execution rules
 
@@ -60,19 +60,13 @@ B08 — Content, Search & Public Data APIs — frontend Issue #56 is next, but i
 
 # Remaining execution order
 
-## B08 — Content, Search & Public Data APIs — Issue #56
-
-Status: **NEXT AFTER B07 REGISTRY ACCEPTANCE**
-
-Owns backend content required by the frozen frontend, search/filter/sort, pagination and SEO-supporting public APIs. Prefer PostgreSQL-native search unless measured evidence justifies another engine.
-
-B08 must preserve B02 publication visibility, B03 commerce truth and the accepted B07 financial/provider boundary. Production authority must not fall back to fixture content or client-side search truth.
-
 ## B09 — Admin Operations, Notifications & Audit — Issue #57
 
-Status: **REGISTERED / WAITING FOR B08**
+Status: **NEXT AFTER B08 REGISTRY ACCEPTANCE**
 
-Owns staff/admin workflows, role/permission matrix, audit trail and notification abstractions while preserving domain invariants.
+Owns staff/admin workflows, role/permission matrix, audit trail, content operations and notification abstractions while preserving B01–B08 domain invariants.
+
+B09 must not turn staff convenience into a bypass around publication, inventory, order or payment truth. Audit evidence must be durable for privileged mutations.
 
 ## B10 — Backend Security, Reliability & Release Gate — Issue #58
 
@@ -84,7 +78,7 @@ Owns final backend hardening, dependency/security review, auth/session/CSRF/rate
 
 Status: **REGISTERED / WAITING FOR B10**
 
-Owns integration of the F19 frontend with accepted backend truth across auth, account, catalog, price/inventory, cart/wishlist, checkout/shipping, orders, payment and content/search.
+Owns integration of the F19 frontend with accepted backend truth across auth, account, catalog, price/inventory, cart/wishlist, checkout/shipping, orders, payment and content/search. It must remove production authority from frontend fixtures/localStorage/client totals.
 
 ## R00 — Pre-Production Release Rehearsal — Issue #60
 
@@ -110,4 +104,4 @@ Owns final production-authoritative acceptance, operations/security review, depl
 
 ## Resume instruction
 
-Do not redo F19 or B00–B07. Complete this B07 docs-only registry acceptance first. Then use the resulting post-merge-green backend `main` SHA as the exact B08 START_SHA, create the dedicated B08 branch and resume from frontend Issue #56.
+Do not redo F19 or B00–B08. Complete this B08 docs-only registry acceptance first. Then use the resulting post-merge-green backend `main` SHA as the exact B09 START_SHA, create the dedicated B09 branch and resume from frontend Issue #57.
