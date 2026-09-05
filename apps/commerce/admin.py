@@ -2,11 +2,20 @@ from typing import Any
 from uuid import UUID
 
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 
+from apps.accounts.models import User
 from apps.operations.staff_services import set_inventory_as_staff, set_price_as_staff
 
 from .models import InventoryReservation, VariantInventory, VariantPrice
+
+
+def _require_staff_user(request: HttpRequest) -> User:
+    actor = request.user
+    if not isinstance(actor, User) or not actor.is_staff:
+        raise PermissionDenied("Authenticated staff user required for admin mutation.")
+    return actor
 
 
 @admin.register(VariantPrice)
@@ -25,8 +34,9 @@ class VariantPriceAdmin(admin.ModelAdmin):
         form: Any,
         change: bool,
     ) -> None:
+        actor = _require_staff_user(request)
         price = set_price_as_staff(
-            request.user,
+            actor,
             variant_id=UUID(str(obj.variant_id)),
             amount_toman=obj.amount_toman,
             compare_at_toman=obj.compare_at_toman,
@@ -58,8 +68,9 @@ class VariantInventoryAdmin(admin.ModelAdmin):
         form: Any,
         change: bool,
     ) -> None:
+        actor = _require_staff_user(request)
         inventory = set_inventory_as_staff(
-            request.user,
+            actor,
             variant_id=UUID(str(obj.variant_id)),
             on_hand=obj.on_hand,
             is_active=obj.is_active,
