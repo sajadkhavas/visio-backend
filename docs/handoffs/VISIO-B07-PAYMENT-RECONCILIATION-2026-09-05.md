@@ -2,21 +2,28 @@
 
 ## Resume truth
 
-B07 application implementation is complete and implementation-head green. Application closure/freeze, PR merge, post-merge verification and the final registry transition remain required before B08 receives its exact START_SHA.
+B07 application scope is **COMPLETED / MERGED / FROZEN / APPLICATION POST-MERGE GREEN**. This docs-only registry transition is the final B07 bookkeeping step before B08 receives its exact accepted backend START_SHA.
 
 ### Exact coordinates
 
 - exact B07 START_SHA: `1269be71e7abcde4f01700f7809c416cefcc49e2`
 - implementation branch: `phase/visio-b07-payment-reconciliation`
 - implementation END_SHA: `9470ccd25bafce793c9b6e6e2f6d3309c8c1772e`
+- closure/freeze head: `b2230b696c7e587dbaf08d4dc80d3d6a47718b28`
+- freeze ref: `freeze/visio-backend-b07-20260905`
+- application PR: #14
+- accepted application merge: `b7dd550c1bf7e6a543f8a7f348dd8ddc73669c6a`
 - frontend tracker: Issue #55
 
-### Accepted implementation evidence
+### Accepted application evidence
 
 - implementation Gate #250 / run `33978360189`: PASS
-- exact implementation head: `9470ccd25bafce793c9b6e6e2f6d3309c8c1772e`
+- closure Gate #254 / run `33978559625`: PASS
+- PR exact-head Gate #255 / run `33978620868`: PASS
+- application post-merge Gate #256 / run `33978686790`: PASS
+- unresolved PR review threads: 0
 - PostgreSQL suite: **91/91 PASS**
-- strict mypy: PASS / 90 source files
+- strict mypy: PASS / 90 source files at implementation Gate
 - migration drift: 0
 - migrate-from-zero PostgreSQL 16.15: PASS
 - OpenAPI: PASS
@@ -45,7 +52,7 @@ B07 application implementation is complete and implementation-head green. Applic
 4. Toman→IRR conversion is exact integer `×10` and DB-protected.
 5. One Order cannot have multiple active/verified payment attempts.
 6. Same-key replay is idempotent; in-flight requesting/verifying fails closed against duplicate outbound effects.
-7. A real verified provider payment must remain durable even if Order/inventory confirmation fails afterward.
+7. A real verified provider payment remains durable if Order/inventory confirmation later fails.
 8. Such failures become explicit reconciliation mismatches rather than silent repair or provider-truth rollback.
 9. Duplicate callbacks/reconciliation retries cannot consume inventory twice.
 10. Production payment remains disabled unless valid environment-only configuration is supplied.
@@ -60,20 +67,17 @@ B07 does not expose refund authorization as a public API; later B09/B10 staff/au
 
 ## B08 integration boundary
 
-B08 — Content, Search & Public Data APIs — must not alter B07 financial/provider truth. It may consume accepted customer/catalog/public data boundaries but must not add payment shortcuts, client-authoritative totals or payment-provider behavior.
+B08 — Content, Search & Public Data APIs — must not alter B07 financial/provider truth. It may consume accepted customer/catalog/public-data boundaries but must not add payment shortcuts, client-authoritative totals or new payment-provider behavior.
 
-## Final transition rule
+## B08 START_SHA rule
 
-Do not start B08 from B07 implementation END_SHA or from the later B07 application merge SHA.
+Do not start B08 from B07 implementation END_SHA or from the B07 application merge SHA.
 
-After B07 application closure:
+The exact B08 START_SHA becomes the resulting backend `main` SHA only after this docs-only registry branch:
 
-1. exact closure/freeze Gate passes;
-2. application PR has zero unresolved blocking review threads;
-3. application merges using expected head SHA;
-4. post-merge `main` Backend Quality Gate passes;
-5. docs-only B07 registry PR records all accepted evidence;
-6. registry PR exact-head Gate passes and merges with expected SHA;
-7. registry post-merge `main` Gate passes.
+1. passes its exact-head Backend Quality Gate;
+2. has zero unresolved blocking PR review threads;
+3. merges with its expected head SHA;
+4. passes the post-merge `main` Backend Quality Gate.
 
-Only the resulting final post-merge-green backend `main` SHA is the exact B08 START_SHA and may be registered into frontend Issue #56.
+Only that final post-merge-green SHA may be registered into frontend Issue #56 and used to create the dedicated B08 branch.
