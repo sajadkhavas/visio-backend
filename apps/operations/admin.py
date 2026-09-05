@@ -8,7 +8,7 @@ from .notifications import dispatch_notification
 
 
 @admin.register(AuditEvent)
-class AuditEventAdmin(admin.ModelAdmin[AuditEvent]):
+class AuditEventAdmin(admin.ModelAdmin):
     list_display = (
         "sequence",
         "created_at",
@@ -46,7 +46,7 @@ class AuditEventAdmin(admin.ModelAdmin[AuditEvent]):
 
 
 @admin.register(NotificationOutbox)
-class NotificationOutboxAdmin(admin.ModelAdmin[NotificationOutbox]):
+class NotificationOutboxAdmin(admin.ModelAdmin):
     list_display = (
         "created_at",
         "event_type",
@@ -111,7 +111,7 @@ class NotificationOutboxAdmin(admin.ModelAdmin[NotificationOutbox]):
 
 
 @admin.register(NotificationDeliveryAttempt)
-class NotificationDeliveryAttemptAdmin(admin.ModelAdmin[NotificationDeliveryAttempt]):
+class NotificationDeliveryAttemptAdmin(admin.ModelAdmin):
     list_display = ("created_at", "notification", "attempt_no", "result")
     list_filter = ("result", "created_at")
     search_fields = ("notification__dedupe_key", "notification__recipient", "error")
