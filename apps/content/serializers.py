@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from rest_framework import serializers
 
 from .models import ContentEntry
@@ -65,17 +63,3 @@ class ContentEntrySerializer(serializers.ModelSerializer):
 
     def get_authoritative(self, entry: ContentEntry) -> bool:
         return True
-
-
-class PublicSearchResultSerializer(serializers.Serializer):
-    type = serializers.ChoiceField(choices=("product", "content"))
-    slug = serializers.CharField()
-    title = serializers.CharField()
-    subtitle = serializers.CharField(allow_blank=True)
-    kind = serializers.CharField(allow_blank=True)
-    url = serializers.CharField()
-    score = serializers.FloatField()
-    payload = serializers.DictField(child=serializers.JSONField())
-
-    def to_representation(self, instance: Any) -> dict[str, Any]:
-        return dict(super().to_representation(instance))
