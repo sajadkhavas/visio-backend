@@ -1,0 +1,53 @@
+name: B07 Temporary Targeted Patch
+
+on:
+  push:
+    branches:
+      - phase/visio-b07-payment-reconciliation
+    paths:
+      - .github/workflows/b07-targeted-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: true
+      - name: Apply exact source patches
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          tests = Path('tests/test_b07_payments.py')
+          text = tests.read_text()
+          text = text.replace(
+              'from decimal import Decimal\nfrom uuid import UUID, uuid4\n',
+              'from decimal import Decimal\nfrom typing import Any\nfrom uuid import UUID, uuid4\n',
+              1,
+          )
+          text = text.replace('settings: object', 'settings: Any')
+          tests.write_text(text)
+
+          services = Path('apps/payments/services.py')
+          text = services.read_text()
+          old = '''        order = _locked_owned_order(user, order_public_id)\n        if order.status != Order.Status.PENDING_PAYMENT:\n            raise PaymentConflictError("Only a pending-payment order can start a payment.")\n\n        existing = (\n            PaymentAttempt.objects.select_for_update()\n            .filter(order=order, idempotency_key=idempotency_key)\n            .first()\n        )\n        if existing is not None:\n            if existing.provider != provider_name:\n                raise PaymentConflictError("Payment idempotency key belongs to another provider.")\n            if existing.status == PaymentAttempt.Status.VERIFIED:\n                return existing, False\n            if existing.provider_authority and existing.status in {\n                PaymentAttempt.Status.PENDING,\n                PaymentAttempt.Status.VERIFYING,\n            }:\n                return existing, False\n'''
+          new = '''        order = _locked_owned_order(user, order_public_id)\n        existing = (\n            PaymentAttempt.objects.select_for_update()\n            .filter(order=order, idempotency_key=idempotency_key)\n            .first()\n        )\n        if existing is not None:\n            if existing.provider != provider_name:\n                raise PaymentConflictError("Payment idempotency key belongs to another provider.")\n            if existing.status == PaymentAttempt.Status.VERIFIED:\n                return existing, False\n\n        if order.status != Order.Status.PENDING_PAYMENT:\n            raise PaymentConflictError("Only a pending-payment order can start a payment.")\n\n        if existing is not None:\n            if existing.provider_authority and existing.status in {\n                PaymentAttempt.Status.PENDING,\n                PaymentAttempt.Status.VERIFYING,\n            }:\n                return existing, False\n'''
+          if old not in text:
+              raise SystemExit('EXPECTED_SERVICES_BLOCK_NOT_FOUND')
+          services.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit targeted fixes
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/payments/services.py tests/test_b07_payments.py
+          git diff --cached --check
+          git commit -m 'B07: fix typing and verified replay idempotency'
+          git push origin HEAD:phase/visio-b07-payment-reconciliation
