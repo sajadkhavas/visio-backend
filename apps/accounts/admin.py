@@ -62,7 +62,7 @@ class VisioUserAdmin(UserAdmin):
 
 
 @admin.register(Address)
-class AddressAdmin(admin.ModelAdmin[Address]):
+class AddressAdmin(admin.ModelAdmin):
     list_display = ("user", "label", "province", "city", "is_default", "updated_at")
     search_fields = ("user__email", "recipient_name", "recipient_phone", "postal_code")
     list_filter = ("country_code", "province", "city", "is_default")
