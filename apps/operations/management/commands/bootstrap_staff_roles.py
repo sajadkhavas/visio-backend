@@ -27,7 +27,9 @@ class Command(BaseCommand):
                 object_id="VISIO-role-matrix",
                 summary="Deterministic VISIO staff role definitions were reconciled from code.",
                 metadata={
-                    "roles": {name: list(permissions) for name, permissions in sorted(resolved.items())}
+                    "roles": {
+                        name: list(permissions) for name, permissions in sorted(resolved.items())
+                    }
                 },
             )
         mode = "CHECK" if dry_run else "SYNC"
