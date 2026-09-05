@@ -10,7 +10,7 @@ from .services import OrderError
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin[Order]):
+class OrderAdmin(admin.ModelAdmin):
     list_display = ("public_id", "user", "status", "payable_toman", "status_changed_at", "created_at")
     list_filter = ("status", "created_at")
     search_fields = ("public_id", "user__email")
@@ -88,7 +88,7 @@ class OrderAdmin(admin.ModelAdmin[Order]):
 
 
 @admin.register(OrderLine)
-class OrderLineAdmin(admin.ModelAdmin[OrderLine]):
+class OrderLineAdmin(admin.ModelAdmin):
     list_display = ("order", "source_variant_sku", "quantity", "unit_price_toman", "line_total_toman")
     search_fields = ("order__public_id", "source_variant_sku", "source_product_name")
     readonly_fields = (
