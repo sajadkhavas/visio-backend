@@ -147,7 +147,10 @@ def test_content_search_filter_sort_pagination_and_unknown_params() -> None:
     assert searched.status_code == 200
     assert [item["slug"] for item in searched.json()["results"]] == ["size-guide"]
 
-    paged = Client().get(CONTENT_PATH, {"kind": "guide", "page_size": 1, "sort": "title-asc"})
+    paged = Client().get(
+        CONTENT_PATH,
+        {"kind": "guide", "page_size": "1", "sort": "title-asc"},
+    )
     assert paged.status_code == 200
     assert paged.json()["count"] == 2
     assert len(paged.json()["results"]) == 1
