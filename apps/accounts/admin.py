@@ -1,13 +1,34 @@
 from typing import Any
 
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from django.contrib.auth.models import Group
 from django.db import transaction
 from django.http import HttpRequest
 
 from apps.operations.audit import append_audit_event
 
 from .models import Address, User
+
+
+try:
+    admin.site.unregister(Group)
+except admin.sites.NotRegistered:
+    pass
+
+
+@admin.register(Group)
+class ReadOnlyRoleDefinitionAdmin(GroupAdmin):
+    """Role definitions are code-owned by the deterministic B09 role matrix."""
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_change_permission(self, request: HttpRequest, obj: Group | None = None) -> bool:
+        return False
+
+    def has_delete_permission(self, request: HttpRequest, obj: Group | None = None) -> bool:
+        return False
 
 
 @admin.register(User)
@@ -57,6 +78,38 @@ class VisioUserAdmin(UserAdmin):
                         "isStaff": obj.is_staff,
                         "isSuperuser": obj.is_superuser,
                     },
+                },
+            )
+
+    def save_related(
+        self,
+        request: HttpRequest,
+        form: Any,
+        formsets: Any,
+        change: bool,
+    ) -> None:
+        with transaction.atomic():
+            super().save_related(request, form, formsets, change)
+            changed_data = set(getattr(form, "changed_data", ()))
+            if not request.user.is_superuser or not changed_data.intersection(
+                {"groups", "user_permissions"}
+            ):
+                return
+            user = form.instance
+            groups = sorted(user.groups.values_list("name", flat=True))
+            explicit_permissions = sorted(
+                f"{permission.content_type.app_label}.{permission.codename}"
+                for permission in user.user_permissions.select_related("content_type")
+            )
+            append_audit_event(
+                actor=request.user,
+                action="account.authorization_assignments_updated",
+                object_type="accounts.User",
+                object_id=str(user.pk),
+                summary="Superuser changed staff role or explicit permission assignments.",
+                metadata={
+                    "groups": groups,
+                    "explicitPermissions": explicit_permissions,
                 },
             )
 
