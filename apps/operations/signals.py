@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from functools import partial
-
-from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -24,19 +21,15 @@ def schedule_verified_payment_notification(
     recipient = str(order.customer_snapshot.get("email", "")).strip()
     if not recipient:
         return
-    transaction.on_commit(
-        partial(
-            queue_notification,
-            dedupe_key=f"payment:{instance.id}:verified",
-            event_type="payment.verified",
-            recipient=recipient,
-            subject="پرداخت سفارش شما در VISIO تایید شد",
-            body=f"پرداخت سفارش {order.public_id} با موفقیت تایید شد.",
-            payload={
-                "paymentId": str(instance.id),
-                "orderId": str(order.public_id),
-                "referenceId": instance.provider_ref_id,
-            },
-        ),
-        robust=True,
+    queue_notification(
+        dedupe_key=f"payment:{instance.id}:verified",
+        event_type="payment.verified",
+        recipient=recipient,
+        subject="پرداخت سفارش شما در VISIO تایید شد",
+        body=f"پرداخت سفارش {order.public_id} با موفقیت تایید شد.",
+        payload={
+            "paymentId": str(instance.id),
+            "orderId": str(order.public_id),
+            "referenceId": instance.provider_ref_id,
+        },
     )
