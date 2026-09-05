@@ -1,12 +1,20 @@
 from django.contrib import admin, messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
+from apps.accounts.models import User
 from apps.operations.staff_services import advance_order_as_staff
 
 from .models import Order, OrderLine
 from .services import OrderError
+
+
+def _require_staff_user(request: HttpRequest) -> User:
+    actor = request.user
+    if not isinstance(actor, User) or not actor.is_staff:
+        raise PermissionDenied("Authenticated staff user required for admin mutation.")
+    return actor
 
 
 @admin.register(Order)
@@ -62,12 +70,13 @@ class OrderAdmin(admin.ModelAdmin):
         *,
         target_status: str,
     ) -> None:
+        actor = _require_staff_user(request)
         changed = 0
         failed = 0
         for order in queryset.order_by("created_at", "id"):
             try:
                 result = advance_order_as_staff(
-                    request.user,
+                    actor,
                     order_id=order.id,
                     target_status=target_status,
                 )
