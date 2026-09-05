@@ -98,6 +98,19 @@ module = [
 ]
 disallow_subclassing_any = false
 
+[[tool.mypy.overrides]]
+module = [
+  "apps.accounts.admin",
+  "apps.catalog.admin",
+  "apps.content.admin",
+  "apps.commerce.admin",
+  "apps.orders.admin",
+  "apps.payments.admin",
+  "apps.operations.admin",
+]
+disallow_any_generics = false
+disallow_subclassing_any = false
+
 [tool.django-stubs]
 django_settings_module = "config.settings.test"
 strict_settings = true
