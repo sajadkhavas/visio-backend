@@ -10,7 +10,7 @@ from .models import InventoryReservation, VariantInventory, VariantPrice
 
 
 @admin.register(VariantPrice)
-class VariantPriceAdmin(admin.ModelAdmin[VariantPrice]):
+class VariantPriceAdmin(admin.ModelAdmin):
     list_display = ("variant", "amount_toman", "compare_at_toman", "is_active", "updated_at")
     list_filter = ("is_active",)
     search_fields = ("variant__sku", "variant__product__name")
@@ -39,7 +39,7 @@ class VariantPriceAdmin(admin.ModelAdmin[VariantPrice]):
 
 
 @admin.register(VariantInventory)
-class VariantInventoryAdmin(admin.ModelAdmin[VariantInventory]):
+class VariantInventoryAdmin(admin.ModelAdmin):
     list_display = ("variant", "on_hand", "is_active", "updated_at")
     list_filter = ("is_active",)
     search_fields = ("variant__sku", "variant__product__name")
@@ -71,7 +71,7 @@ class VariantInventoryAdmin(admin.ModelAdmin[VariantInventory]):
 
 
 @admin.register(InventoryReservation)
-class InventoryReservationAdmin(admin.ModelAdmin[InventoryReservation]):
+class InventoryReservationAdmin(admin.ModelAdmin):
     list_display = ("inventory", "quantity", "status", "expires_at", "created_at")
     list_filter = ("status", "expires_at")
     search_fields = ("inventory__variant__sku", "inventory__variant__product__name")
