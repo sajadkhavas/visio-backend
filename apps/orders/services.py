@@ -4,7 +4,6 @@ from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
 from typing import Any
 from uuid import UUID
 
@@ -252,27 +251,23 @@ def _order_lines_for_transition(order: Order) -> list[OrderLine]:
     )
 
 
-def _schedule_order_notification(order: Order) -> None:
+def _queue_order_notification(order: Order) -> None:
     subject = ORDER_NOTIFICATION_SUBJECTS.get(order.status)
     if subject is None:
         return
     recipient = str(order.customer_snapshot.get("email", "")).strip()
     if not recipient:
         return
-    transaction.on_commit(
-        partial(
-            queue_notification,
-            dedupe_key=f"order:{order.id}:status:{order.status}",
-            event_type=f"order.{order.status}",
-            recipient=recipient,
-            subject=subject,
-            body=f"وضعیت سفارش {order.public_id} به «{order.get_status_display()}» تغییر کرد.",
-            payload={
-                "orderId": str(order.public_id),
-                "status": order.status,
-            },
-        ),
-        robust=True,
+    queue_notification(
+        dedupe_key=f"order:{order.id}:status:{order.status}",
+        event_type=f"order.{order.status}",
+        recipient=recipient,
+        subject=subject,
+        body=f"وضعیت سفارش {order.public_id} به «{order.get_status_display()}» تغییر کرد.",
+        payload={
+            "orderId": str(order.public_id),
+            "status": order.status,
+        },
     )
 
 
@@ -281,7 +276,7 @@ def _set_status(order: Order, status: str, *, at: datetime) -> Order:
     order.status_changed_at = at
     order.updated_at = at
     order.save(update_fields=("status", "status_changed_at", "updated_at"))
-    _schedule_order_notification(order)
+    _queue_order_notification(order)
     return order
 
 
