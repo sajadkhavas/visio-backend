@@ -38,6 +38,7 @@ select = ["E", "F", "I", "UP", "B", "DJ"]
 "config/settings/*.py" = ["F403", "F405"]
 "apps/accounts/migrations/*.py" = ["E501"]
 "apps/catalog/migrations/*.py" = ["E501"]
+"apps/content/migrations/*.py" = ["E501"]
 "apps/commerce/migrations/*.py" = ["E501"]
 "apps/cart/migrations/*.py" = ["E501"]
 "apps/checkout/migrations/*.py" = ["E501"]
@@ -58,6 +59,7 @@ show_error_codes = true
 exclude = [
   "apps/accounts/migrations/",
   "apps/catalog/migrations/",
+  "apps/content/migrations/",
   "apps/commerce/migrations/",
   "apps/cart/migrations/",
   "apps/checkout/migrations/",
@@ -78,6 +80,9 @@ module = [
   "apps.catalog.serializers",
   "apps.catalog.api_views",
   "apps.catalog.pagination",
+  "apps.content.serializers",
+  "apps.content.api_views",
+  "apps.content.pagination",
   "apps.cart.serializers",
   "apps.cart.api_views",
   "apps.checkout.serializers",
