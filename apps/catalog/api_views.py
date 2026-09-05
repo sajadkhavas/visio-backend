@@ -30,6 +30,7 @@ PRODUCT_QUERY_PARAMETERS = {
     "material",
     "shape",
     "color",
+    "q",
     "sort",
     "page",
     "page_size",
@@ -144,6 +145,20 @@ def validated_catalog_queryset(query_params: object) -> QuerySet[Product]:
                 raise ValidationError({field: f"Unknown {field}."})
             queryset = queryset.filter(**{field: value})
 
+    query = str(query_params.get("q", "")).strip()  # type: ignore[attr-defined]
+    if len(query) > 120:
+        raise ValidationError({"q": "Search query must be at most 120 characters."})
+    if query:
+        for term in query.split():
+            queryset = queryset.filter(
+                Q(name__icontains=term)
+                | Q(brand__name__icontains=term)
+                | Q(category__name__icontains=term)
+                | Q(material__icontains=term)
+                | Q(shape__icontains=term)
+                | Q(color__icontains=term)
+            )
+
     sort = query_params.get("sort", "default")  # type: ignore[attr-defined]
     if sort == "default":
         return queryset.order_by("sort_order", "name", "id")
@@ -185,6 +200,11 @@ class CategoryListView(ListAPIView):
         OpenApiParameter("material", str, description="Comma-separated material values."),
         OpenApiParameter("shape", str, description="Exact shape value."),
         OpenApiParameter("color", str, description="Exact color value."),
+        OpenApiParameter(
+            "q",
+            str,
+            description="Backend-authoritative catalog text search, max 120 chars.",
+        ),
         OpenApiParameter("sort", str, enum=["default", "name-asc", "name-desc"]),
         OpenApiParameter("page", int),
         OpenApiParameter("page_size", int, description="Maximum 48."),
