@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "apps.accounts.apps.AccountsConfig",
     "apps.catalog.apps.CatalogConfig",
+    "apps.content.apps.ContentConfig",
     "apps.commerce.apps.CommerceConfig",
     "apps.cart.apps.CartConfig",
     "apps.checkout.apps.CheckoutConfig",
