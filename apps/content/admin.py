@@ -10,7 +10,7 @@ from .models import ContentEntry
 
 
 @admin.register(ContentEntry)
-class ContentEntryAdmin(admin.ModelAdmin[ContentEntry]):
+class ContentEntryAdmin(admin.ModelAdmin):
     list_display = ("kind", "slug", "title", "status", "published_at", "updated_at")
     list_filter = ("kind", "status", "published_at")
     search_fields = ("slug", "title", "summary", "search_text")
