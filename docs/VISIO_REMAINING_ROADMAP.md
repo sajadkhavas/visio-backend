@@ -13,31 +13,32 @@ This is the backend resume roadmap. Authoritative master tracker: frontend repos
 - B03 — Pricing/Inventory Integrity: COMPLETED / MERGED / FROZEN / POST-MERGE GREEN
 - B04 — Cart & Wishlist Persistence: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
 - B05 — Checkout, Address Validation, Shipping & Delivery: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
-- B06 — Orders & Order Lifecycle: APPLICATION COMPLETED / MERGED / FROZEN / POST-MERGE GREEN; FINAL REGISTRY SYNC IN PROGRESS
+- B06 — Orders & Order Lifecycle: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
+- B07 — Payment & Reconciliation: APPLICATION COMPLETED / MERGED / FROZEN / POST-MERGE GREEN; FINAL REGISTRY SYNC IN PROGRESS
 
-## B06 accepted application evidence
+## B07 accepted application evidence
 
-- START_SHA: `b44cb77cc3373c496c8e6d0ab251650ee6e48a95`
-- implementation branch: `phase/visio-b06-orders-lifecycle`
-- implementation END_SHA: `889e9b73f197a12fdbedb2ef650869024f53d806`
-- closure/freeze head: `e910ac3ebae6231fdb6ae811f0ce5fbdf07e34ae`
-- freeze ref: `freeze/visio-backend-b06-20260905`
-- backend application PR #12: MERGED with expected head SHA
-- accepted B06 application merge: `89ec9234e56cf6908a10447b80f057e29730bfca`
-- implementation Gate #203 / `33919923311` — PASS
-- closure Gate #206 / `33920106400` — PASS
-- PR exact-head Gate #207 / `33974601876` — PASS
-- application post-merge Gate #208 / `33974673956` — PASS
+- START_SHA: `1269be71e7abcde4f01700f7809c416cefcc49e2`
+- implementation branch: `phase/visio-b07-payment-reconciliation`
+- implementation END_SHA: `9470ccd25bafce793c9b6e6e2f6d3309c8c1772e`
+- closure/freeze head: `b2230b696c7e587dbaf08d4dc80d3d6a47718b28`
+- freeze ref: `freeze/visio-backend-b07-20260905`
+- backend application PR #14: MERGED with expected head SHA
+- accepted B07 application merge: `b7dd550c1bf7e6a543f8a7f348dd8ddc73669c6a`
+- implementation Gate #250 / `33978360189` — PASS
+- closure Gate #254 / `33978559625` — PASS
+- PR exact-head Gate #255 / `33978620868` — PASS
+- application post-merge Gate #256 / `33978686790` — PASS
 - unresolved review threads: 0
 - migration drift: 0
 - migrate-from-zero PostgreSQL 16.15: PASS
-- full PostgreSQL suite: 77/77 PASS
+- full PostgreSQL suite: 91/91 PASS
 
-B06 delivers durable orders and order lines, immutable purchase snapshots, user-scoped idempotent creation from a revalidated B05 READY checkout, explicit forward-only lifecycle, customer list/detail/cancel APIs and exact reservation release/consume handoff. B06 never treats a redirect/callback as payment proof and exposes no public payment-confirm endpoint.
+B07 delivers durable payment attempts and reconciliation evidence, official-contract ZarinPal request/verify/reversal/refund adapter boundaries, fail-closed production configuration, exact Toman→IRR conversion, authoritative provider verification, duplicate-effect/idempotency protection and mismatch-safe preservation of real verified payment truth before B06 Order/inventory confirmation.
 
 ## Current transition
 
-B07 — Payment & Reconciliation — frontend Issue #55 is next, but its exact START_SHA is **not** the B06 application merge above. This docs-only registry branch intentionally follows application acceptance. The exact B07 START_SHA is the resulting backend `main` SHA after this registry PR is reviewed, exact-head green, merged with expected SHA and its post-merge Backend Quality Gate passes.
+B08 — Content, Search & Public Data APIs — frontend Issue #56 is next, but its exact START_SHA is **not** the B07 application merge above. This docs-only registry branch intentionally follows application acceptance. The exact B08 START_SHA is the resulting backend `main` SHA after this registry PR is reviewed, exact-head green, merged with expected SHA and its post-merge Backend Quality Gate passes.
 
 ## Mandatory execution rules
 
@@ -59,19 +60,13 @@ B07 — Payment & Reconciliation — frontend Issue #55 is next, but its exact S
 
 # Remaining execution order
 
-## B07 — Payment & Reconciliation — Issue #55
-
-Status: **NEXT AFTER B06 REGISTRY ACCEPTANCE**
-
-Owns payment attempts, provider abstraction, create/redirect/callback/verify lifecycle, exact money-unit conversion, callback verification, idempotency, payment transitions, reconciliation, fail-closed provider configuration and only officially supported refund/reversal behavior.
-
-B07 must preserve B06 order truth as a separate domain. It may confirm an order only after authoritative provider verification succeeds.
-
 ## B08 — Content, Search & Public Data APIs — Issue #56
 
-Status: **REGISTERED / WAITING FOR B07**
+Status: **NEXT AFTER B07 REGISTRY ACCEPTANCE**
 
 Owns backend content required by the frozen frontend, search/filter/sort, pagination and SEO-supporting public APIs. Prefer PostgreSQL-native search unless measured evidence justifies another engine.
+
+B08 must preserve B02 publication visibility, B03 commerce truth and the accepted B07 financial/provider boundary. Production authority must not fall back to fixture content or client-side search truth.
 
 ## B09 — Admin Operations, Notifications & Audit — Issue #57
 
@@ -115,4 +110,4 @@ Owns final production-authoritative acceptance, operations/security review, depl
 
 ## Resume instruction
 
-Do not redo F19 or B00–B06. Complete this B06 docs-only registry acceptance first. Then use the resulting post-merge-green backend `main` SHA as the exact B07 START_SHA, create the dedicated B07 branch and resume from frontend Issue #55.
+Do not redo F19 or B00–B07. Complete this B07 docs-only registry acceptance first. Then use the resulting post-merge-green backend `main` SHA as the exact B08 START_SHA, create the dedicated B08 branch and resume from frontend Issue #56.
