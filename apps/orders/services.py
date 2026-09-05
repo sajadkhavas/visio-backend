@@ -18,6 +18,7 @@ from apps.checkout.order_bridge import revalidate_ready_checkout
 from apps.checkout.services import CheckoutError, CheckoutNotFoundError
 from apps.commerce.models import InventoryReservation
 from apps.commerce.services import consume_reservation, release_reservation
+from apps.operations.notifications import queue_notification
 
 from .models import Order, OrderLine
 
@@ -52,6 +53,15 @@ FULFILLMENT_TRANSITIONS: dict[str, str] = {
     Order.Status.CONFIRMED: Order.Status.PROCESSING,
     Order.Status.PROCESSING: Order.Status.SHIPPED,
     Order.Status.SHIPPED: Order.Status.DELIVERED,
+}
+
+ORDER_NOTIFICATION_SUBJECTS: dict[str, str] = {
+    Order.Status.CONFIRMED: "سفارش شما در VISIO تایید شد",
+    Order.Status.PROCESSING: "سفارش شما در حال پردازش است",
+    Order.Status.SHIPPED: "سفارش شما ارسال شد",
+    Order.Status.DELIVERED: "سفارش شما تحویل شد",
+    Order.Status.CANCELLED: "سفارش شما لغو شد",
+    Order.Status.EXPIRED: "مهلت پرداخت سفارش شما به پایان رسید",
 }
 
 
@@ -241,11 +251,32 @@ def _order_lines_for_transition(order: Order) -> list[OrderLine]:
     )
 
 
+def _queue_order_notification(order: Order) -> None:
+    subject = ORDER_NOTIFICATION_SUBJECTS.get(order.status)
+    if subject is None:
+        return
+    recipient = str(order.customer_snapshot.get("email", "")).strip()
+    if not recipient:
+        return
+    queue_notification(
+        dedupe_key=f"order:{order.id}:status:{order.status}",
+        event_type=f"order.{order.status}",
+        recipient=recipient,
+        subject=subject,
+        body=f"وضعیت سفارش {order.public_id} به «{order.get_status_display()}» تغییر کرد.",
+        payload={
+            "orderId": str(order.public_id),
+            "status": order.status,
+        },
+    )
+
+
 def _set_status(order: Order, status: str, *, at: datetime) -> Order:
     order.status = status
     order.status_changed_at = at
     order.updated_at = at
     order.save(update_fields=("status", "status_changed_at", "updated_at"))
+    _queue_order_notification(order)
     return order
 
 

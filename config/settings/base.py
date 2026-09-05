@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     "apps.checkout.apps.CheckoutConfig",
     "apps.orders.apps.OrdersConfig",
     "apps.payments.apps.PaymentsConfig",
+    "apps.operations.apps.OperationsConfig",
     "apps.system.apps.SystemConfig",
 ]
 
@@ -144,6 +145,22 @@ PAYMENT_PROVIDER_TIMEOUT_SECONDS = float(os.getenv("PAYMENT_PROVIDER_TIMEOUT_SEC
 ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID", "").strip()
 ZARINPAL_ACCESS_TOKEN = os.getenv("ZARINPAL_ACCESS_TOKEN", "").strip()
 ZARINPAL_SANDBOX = env_bool("ZARINPAL_SANDBOX", False)
+
+NOTIFICATIONS_ENABLED = env_bool("NOTIFICATIONS_ENABLED", False)
+NOTIFICATIONS_AUTO_DISPATCH = env_bool("NOTIFICATIONS_AUTO_DISPATCH", True)
+NOTIFICATION_CHANNEL = os.getenv("NOTIFICATION_CHANNEL", "email").strip().lower()
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+).strip()
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "webmaster@localhost").strip()
+EMAIL_HOST = os.getenv("EMAIL_HOST", "").strip()
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "").strip()
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", False)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
