@@ -1,7 +1,6 @@
 from typing import Any
 
 from django.contrib import admin
-from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
@@ -20,10 +19,8 @@ def _require_staff_user(request: HttpRequest) -> User:
     return actor
 
 
-try:
+if admin.site.is_registered(Group):
     admin.site.unregister(Group)
-except NotRegistered:
-    pass
 
 
 @admin.register(Group)
