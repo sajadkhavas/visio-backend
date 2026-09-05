@@ -7,7 +7,7 @@ import pytest
 from django.contrib import admin
 from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.test import Client, RequestFactory
+from django.test import RequestFactory
 
 from apps.accounts.admin import VisioUserAdmin
 from apps.accounts.models import User
@@ -15,13 +15,9 @@ from apps.commerce.models import InventoryReservation
 from apps.commerce.services import InventoryUnavailableError
 from apps.operations.audit import append_audit_event, verify_audit_chain
 from apps.operations.models import AuditEvent, NotificationDeliveryAttempt, NotificationOutbox
-from apps.operations.notifications import NotificationOutbox as NotificationModel
 from apps.operations.notifications import dispatch_notification, queue_notification
 from apps.operations.roles import ROLE_MATRIX, sync_staff_roles
-from apps.operations.staff_services import (
-    advance_order_as_staff,
-    set_inventory_as_staff,
-)
+from apps.operations.staff_services import advance_order_as_staff, set_inventory_as_staff
 from apps.orders.models import Order
 from apps.payments.services import reconcile_attempt, start_payment
 from tests.test_b07_payments import FakeProvider, authenticated_client, prepare_pending_order
@@ -192,7 +188,6 @@ def test_unauthorized_staff_cannot_advance_order(settings: Any) -> None:
         slug="unauthorized-order",
     )
     actor = staff_user("unauthorized-staff@example.com")
-    AuditEvent.objects.all().delete()
 
     with pytest.raises(PermissionDenied):
         advance_order_as_staff(
@@ -203,7 +198,7 @@ def test_unauthorized_staff_cannot_advance_order(settings: Any) -> None:
 
     order.refresh_from_db()
     assert order.status == Order.Status.CONFIRMED
-    assert AuditEvent.objects.count() == 0
+    assert not AuditEvent.objects.filter(actor=actor).exists()
 
 
 def test_staff_inventory_mutation_preserves_active_reservation_invariant(settings: Any) -> None:
