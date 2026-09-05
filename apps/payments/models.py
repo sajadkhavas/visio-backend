@@ -36,6 +36,7 @@ class PaymentAttempt(models.Model):
     currency_code = models.CharField(max_length=3, default=CURRENCY_CODE)
     display_unit = models.CharField(max_length=16, default=DISPLAY_UNIT)
     provider_authority = models.CharField(max_length=64, blank=True, default="")
+    provider_redirect_url = models.CharField(max_length=500, blank=True, default="")
     provider_ref_id = models.CharField(max_length=128, blank=True, default="")
     provider_code = models.IntegerField(null=True, blank=True)
     provider_message = models.CharField(max_length=500, blank=True, default="")
