@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     "apps.cart.apps.CartConfig",
     "apps.checkout.apps.CheckoutConfig",
     "apps.orders.apps.OrdersConfig",
+    "apps.payments.apps.PaymentsConfig",
     "apps.system.apps.SystemConfig",
 ]
 
@@ -134,6 +135,14 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_FAILURE_VIEW = "apps.system.csrf.csrf_failure"
+
+PAYMENTS_ENABLED = env_bool("PAYMENTS_ENABLED", False)
+PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "disabled").strip().lower()
+PAYMENT_CALLBACK_URL = os.getenv("PAYMENT_CALLBACK_URL", "").strip()
+PAYMENT_PROVIDER_TIMEOUT_SECONDS = float(os.getenv("PAYMENT_PROVIDER_TIMEOUT_SECONDS", "10"))
+ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID", "").strip()
+ZARINPAL_ACCESS_TOKEN = os.getenv("ZARINPAL_ACCESS_TOKEN", "").strip()
+ZARINPAL_SANDBOX = env_bool("ZARINPAL_SANDBOX", False)
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
