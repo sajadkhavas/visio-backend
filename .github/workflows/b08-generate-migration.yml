@@ -41,7 +41,7 @@ jobs:
       - name: Commit generated migration only
         run: |
           set -Eeuo pipefail
-          if git diff --quiet -- apps/content/migrations; then
+          if [[ -z "$(git status --porcelain -- apps/content/migrations)" ]]; then
             echo "No migration delta generated"
             exit 1
           fi
