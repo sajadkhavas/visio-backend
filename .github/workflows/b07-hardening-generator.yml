@@ -1,0 +1,365 @@
+name: B07 Temporary Hardening Generator
+
+on:
+  push:
+    branches:
+      - phase/visio-b07-payment-reconciliation
+    paths:
+      - .github/workflows/b07-hardening-generator.yml
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16.15-bookworm
+        env:
+          POSTGRES_DB: visio_ci
+          POSTGRES_USER: visio_ci
+          POSTGRES_PASSWORD: visio_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U visio_ci -d visio_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      POSTGRES_DB: visio_ci
+      POSTGRES_USER: visio_ci
+      POSTGRES_PASSWORD: visio_ci_password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: true
+      - name: Set up exact Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.13.15"
+          check-latest: false
+      - name: Install pinned uv
+        run: python -m pip install --disable-pip-version-check "uv==0.12.9"
+      - name: Frozen install
+        run: uv sync --frozen --all-groups
+      - name: Apply financial hardening patches
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          services = Path("apps/payments/services.py")
+          text = services.read_text()
+          text = text.replace(
+              "from apps.accounts.models import User\nfrom apps.orders.models import Order\n",
+              "from apps.accounts.models import User\nfrom apps.commerce.services import InventoryUnavailableError, ReservationStateError\nfrom apps.orders.models import Order\n",
+              1,
+          )
+          old_prepare = '''        if existing is not None:\n            if existing.provider != provider_name:\n                raise PaymentConflictError("Payment idempotency key belongs to another provider.")\n            if existing.status == PaymentAttempt.Status.VERIFIED:\n                return existing, False\n\n        if order.status != Order.Status.PENDING_PAYMENT:\n            raise PaymentConflictError("Only a pending-payment order can start a payment.")\n\n        if existing is not None:\n            if existing.provider_authority and existing.status in {\n                PaymentAttempt.Status.PENDING,\n                PaymentAttempt.Status.VERIFYING,\n            }:\n                return existing, False\n            existing.status = PaymentAttempt.Status.REQUESTING\n'''
+          new_prepare = '''        if existing is not None:\n            if existing.provider != provider_name:\n                raise PaymentConflictError("Payment idempotency key belongs to another provider.")\n            if existing.status == PaymentAttempt.Status.VERIFIED:\n                return existing, False\n            if existing.status == PaymentAttempt.Status.REQUESTING:\n                raise PaymentConflictError("Payment request is already in progress.")\n\n        if order.status != Order.Status.PENDING_PAYMENT:\n            raise PaymentConflictError("Only a pending-payment order can start a payment.")\n\n        if existing is not None:\n            if existing.provider_authority and existing.status in {\n                PaymentAttempt.Status.PENDING,\n                PaymentAttempt.Status.VERIFYING,\n            }:\n                return existing, False\n            existing.status = PaymentAttempt.Status.REQUESTING\n'''
+          if old_prepare not in text:
+              raise SystemExit("EXPECTED_PREPARE_BLOCK_NOT_FOUND")
+          text = text.replace(old_prepare, new_prepare, 1)
+
+          start = text.index("def _apply_verified_result(")
+          end = text.index("\ndef verify_attempt(", start)
+          hardened_apply = '''def _apply_verified_result(\n    attempt_id: UUID,\n    result: ProviderVerifyResult,\n    *,\n    at: datetime,\n) -> PaymentVerificationOutcome:\n    digest = _digest_verify(result)\n\n    # Provider payment truth is committed before any order/inventory transition.\n    # A later domain mismatch must never roll back a payment the provider verified.\n    with transaction.atomic():\n        attempt = (\n            PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)\n        )\n        if attempt.status == PaymentAttempt.Status.VERIFIED:\n            return _verified_outcome(attempt)\n\n        order = Order.objects.select_for_update().get(pk=attempt.order_id)\n        expected_rial = int(order.payable_toman) * 10\n        amount_matches = int(attempt.amount_rial) == expected_rial\n\n        attempt.status = PaymentAttempt.Status.VERIFIED\n        attempt.provider_code = result.code\n        attempt.provider_message = result.message[:500]\n        attempt.provider_ref_id = result.ref_id\n        attempt.masked_card = result.masked_card[:32]\n        attempt.card_hash = result.card_hash[:128]\n        attempt.verified_at = at\n        attempt.status_changed_at = at\n        attempt.updated_at = at\n        attempt.save(\n            update_fields=(\n                "status",\n                "provider_code",\n                "provider_message",\n                "provider_ref_id",\n                "masked_card",\n                "card_hash",\n                "verified_at",\n                "status_changed_at",\n                "updated_at",\n            )\n        )\n        order_id = order.id\n\n    with transaction.atomic():\n        attempt = (\n            PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)\n        )\n        order = Order.objects.select_for_update().get(pk=order_id)\n\n        if not amount_matches:\n            PaymentReconciliation.objects.create(\n                attempt=attempt,\n                status=PaymentReconciliation.Status.MISMATCH,\n                provider_code=result.code,\n                provider_ref_id=result.ref_id,\n                provider_payload_digest=digest,\n                detail=(\n                    "Verified provider amount does not match server-authoritative order amount."\n                ),\n                checked_at=at,\n            )\n            attempt.order = order\n            return PaymentVerificationOutcome(\n                attempt=attempt,\n                order_confirmed=False,\n                reconciliation_required=True,\n            )\n\n        try:\n            confirmed_order = confirm_order_after_verified_payment(order.id, at=at)\n        except (OrderError, InventoryUnavailableError, ReservationStateError) as exc:\n            PaymentReconciliation.objects.create(\n                attempt=attempt,\n                status=PaymentReconciliation.Status.MISMATCH,\n                provider_code=result.code,\n                provider_ref_id=result.ref_id,\n                provider_payload_digest=digest,\n                detail=f"Verified provider payment could not confirm order: {exc}"[:500],\n                checked_at=at,\n            )\n            attempt.order = order\n            return PaymentVerificationOutcome(\n                attempt=attempt,\n                order_confirmed=False,\n                reconciliation_required=True,\n            )\n\n        PaymentReconciliation.objects.create(\n            attempt=attempt,\n            status=PaymentReconciliation.Status.MATCHED,\n            provider_code=result.code,\n            provider_ref_id=result.ref_id,\n            provider_payload_digest=digest,\n            detail="Provider verification matches server-authoritative order amount.",\n            checked_at=at,\n        )\n        attempt.order = confirmed_order\n        return PaymentVerificationOutcome(\n            attempt=attempt,\n            order_confirmed=True,\n            reconciliation_required=False,\n        )\n\n'''
+          text = text[:start] + hardened_apply + text[end + 1:]
+          old_verify = '''        if attempt.status == PaymentAttempt.Status.VERIFIED:\n            return _verified_outcome(attempt)\n        if not attempt.provider_authority:\n            raise PaymentConflictError("Payment attempt has no provider authority.")\n        if attempt.status not in {\n            PaymentAttempt.Status.PENDING,\n            PaymentAttempt.Status.VERIFYING,\n            PaymentAttempt.Status.FAILED,\n            PaymentAttempt.Status.CANCELLED,\n            PaymentAttempt.Status.EXPIRED,\n        }:\n'''
+          new_verify = '''        if attempt.status == PaymentAttempt.Status.VERIFIED:\n            return _verified_outcome(attempt)\n        if attempt.status == PaymentAttempt.Status.VERIFYING:\n            raise PaymentConflictError("Payment verification is already in progress.")\n        if not attempt.provider_authority:\n            raise PaymentConflictError("Payment attempt has no provider authority.")\n        if attempt.status not in {\n            PaymentAttempt.Status.PENDING,\n            PaymentAttempt.Status.FAILED,\n            PaymentAttempt.Status.CANCELLED,\n            PaymentAttempt.Status.EXPIRED,\n        }:\n'''
+          if old_verify not in text:
+              raise SystemExit("EXPECTED_VERIFY_BLOCK_NOT_FOUND")
+          services.write_text(text.replace(old_verify, new_verify, 1))
+
+          models = Path("apps/payments/models.py")
+          text = models.read_text()
+          needle = '''            models.UniqueConstraint(\n                fields=("provider", "provider_authority"),\n                condition=~models.Q(provider_authority=""),\n                name="payments_provider_authority_unique",\n            ),\n'''
+          addition = needle + '''            models.UniqueConstraint(\n                fields=("order",),\n                condition=models.Q(\n                    status__in=("requesting", "pending", "verifying", "verified")\n                ),\n                name="payments_one_active_attempt_per_order",\n            ),\n'''
+          if needle not in text:
+              raise SystemExit("EXPECTED_MODEL_CONSTRAINT_NOT_FOUND")
+          models.write_text(text.replace(needle, addition, 1))
+
+          tests = Path("tests/test_b07_payments.py")
+          text = tests.read_text()
+          text = text.replace(
+              "from __future__ import annotations\n\nfrom decimal import Decimal\nfrom typing import Any\n",
+              "from __future__ import annotations\n\nfrom concurrent.futures import ThreadPoolExecutor\nfrom decimal import Decimal\nfrom threading import Event, Lock\nfrom typing import Any\n",
+              1,
+          )
+          text = text.replace(
+              "    ProviderVerifyResult,\n)",
+              "    ProviderVerifyResult,\n    ZarinPalProvider,\n)",
+              1,
+          )
+          text = text.replace(
+              "from django.db import IntegrityError, transaction\n",
+              "from django.db import IntegrityError, close_old_connections, transaction\n",
+              1,
+          )
+          appendix = r'''
+
+class BlockingRequestProvider(FakeProvider):
+    def __init__(self) -> None:
+        super().__init__()
+        self.request_entered = Event()
+        self.release_request = Event()
+        self.call_lock = Lock()
+
+    def request_payment(
+        self,
+        *,
+        amount_rial: int,
+        callback_url: str,
+        description: str,
+        mobile: str = "",
+        email: str = "",
+    ) -> ProviderRequestResult:
+        with self.call_lock:
+            self.request_calls.append(
+                {
+                    "amount_rial": amount_rial,
+                    "callback_url": callback_url,
+                    "description": description,
+                    "mobile": mobile,
+                    "email": email,
+                }
+            )
+        self.request_entered.set()
+        if not self.release_request.wait(timeout=5):
+            raise RuntimeError("test request release timed out")
+        return ProviderRequestResult(
+            code=100,
+            message="Success",
+            authority=self.authority,
+            redirect_url=f"https://payment.zarinpal.com/pg/StartPay/{self.authority}",
+        )
+
+
+class RecordingZarinPalProvider(ZarinPalProvider):
+    def __init__(self) -> None:
+        super().__init__(merchant_id="merchant-test", access_token="access-test")
+        self.calls: list[tuple[str, dict[str, Any], str]] = []
+
+    def _post_json(
+        self,
+        url: str,
+        payload: dict[str, Any],
+        *,
+        authorization: str = "",
+    ) -> dict[str, Any]:
+        self.calls.append((url, payload, authorization))
+        if url.endswith("/request.json"):
+            return {
+                "data": {
+                    "code": 100,
+                    "message": "Success",
+                    "authority": "A12345678901234567890123456789012345",
+                }
+            }
+        if url.endswith("/verify.json"):
+            return {
+                "data": {
+                    "code": 100,
+                    "message": "Verified",
+                    "ref_id": 123456,
+                    "card_pan": "6037********1234",
+                    "card_hash": "hash",
+                }
+            }
+        if url.endswith("/reverse.json"):
+            return {"data": {"code": 100, "message": "Reversed", "ref_id": 123456}}
+        return {"data": {"resource": {"id": "refund-1"}}}
+
+
+def test_same_idempotency_key_concurrency_never_duplicates_provider_request(
+    settings: Any,
+) -> None:
+    user, order = prepare_pending_order(
+        email="payment-concurrent@example.com",
+        slug="payment-concurrent",
+    )
+    provider = BlockingRequestProvider()
+    key = uuid4()
+    settings.PAYMENT_CALLBACK_URL = "https://api.example.test/api/v1/payments/zarinpal/callback/"
+
+    def worker() -> object:
+        close_old_connections()
+        try:
+            thread_user = User.objects.get(pk=user.pk)
+            return start_payment(
+                thread_user,
+                order_public_id=order.public_id,
+                idempotency_key=key,
+                provider=provider,
+            )
+        finally:
+            close_old_connections()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first_future = pool.submit(worker)
+        assert provider.request_entered.wait(timeout=5)
+        second_future = pool.submit(worker)
+        with pytest.raises(PaymentConflictError, match="already in progress"):
+            second_future.result(timeout=5)
+        provider.release_request.set()
+        first = first_future.result(timeout=5)
+
+    assert isinstance(first, object)
+    assert len(provider.request_calls) == 1
+    assert PaymentAttempt.objects.filter(order=order).count() == 1
+    attempt = PaymentAttempt.objects.get(order=order)
+    assert attempt.status == PaymentAttempt.Status.PENDING
+
+
+def test_database_allows_only_one_active_or_verified_attempt_per_order(settings: Any) -> None:
+    user, order = prepare_pending_order(
+        email="payment-active-db@example.com",
+        slug="payment-active-db",
+    )
+    provider = FakeProvider()
+    settings.PAYMENT_CALLBACK_URL = "https://api.example.test/api/v1/payments/zarinpal/callback/"
+    attempt = start_payment(
+        user,
+        order_public_id=order.public_id,
+        idempotency_key=uuid4(),
+        provider=provider,
+    ).attempt
+
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            PaymentAttempt.objects.create(
+                order=order,
+                idempotency_key=uuid4(),
+                provider=PaymentAttempt.Provider.ZARINPAL,
+                status=PaymentAttempt.Status.REQUESTING,
+                amount_toman=attempt.amount_toman,
+                amount_rial=attempt.amount_rial,
+            )
+
+
+def test_verified_provider_truth_survives_inventory_transition_failure(settings: Any) -> None:
+    user, order = prepare_pending_order(
+        email="payment-reservation-mismatch@example.com",
+        slug="payment-reservation-mismatch",
+    )
+    provider = FakeProvider()
+    settings.PAYMENT_CALLBACK_URL = "https://api.example.test/api/v1/payments/zarinpal/callback/"
+    attempt = start_payment(
+        user,
+        order_public_id=order.public_id,
+        idempotency_key=uuid4(),
+        provider=provider,
+    ).attempt
+    reservation = InventoryReservation.objects.get(order_line__order=order)
+    InventoryReservation.objects.filter(pk=reservation.pk).update(
+        status=InventoryReservation.Status.EXPIRED
+    )
+
+    outcome = reconcile_attempt(attempt.id, provider=provider)
+
+    order.refresh_from_db()
+    attempt.refresh_from_db()
+    assert attempt.status == PaymentAttempt.Status.VERIFIED
+    assert order.status == Order.Status.PENDING_PAYMENT
+    assert outcome.order_confirmed is False
+    assert outcome.reconciliation_required is True
+    assert PaymentReconciliation.objects.filter(
+        attempt=attempt,
+        status=PaymentReconciliation.Status.MISMATCH,
+    ).exists()
+
+
+def test_verified_amount_mismatch_is_recorded_without_confirming_order(settings: Any) -> None:
+    user, order = prepare_pending_order(
+        email="payment-amount-mismatch@example.com",
+        slug="payment-amount-mismatch",
+    )
+    provider = FakeProvider()
+    settings.PAYMENT_CALLBACK_URL = "https://api.example.test/api/v1/payments/zarinpal/callback/"
+    attempt = start_payment(
+        user,
+        order_public_id=order.public_id,
+        idempotency_key=uuid4(),
+        provider=provider,
+    ).attempt
+    Order.objects.filter(pk=order.pk).update(
+        subtotal_toman=order.subtotal_toman + 1_000,
+        payable_toman=order.payable_toman + 1_000,
+    )
+
+    outcome = reconcile_attempt(attempt.id, provider=provider)
+
+    order.refresh_from_db()
+    attempt.refresh_from_db()
+    assert attempt.status == PaymentAttempt.Status.VERIFIED
+    assert order.status == Order.Status.PENDING_PAYMENT
+    assert outcome.order_confirmed is False
+    assert outcome.reconciliation_required is True
+    assert PaymentReconciliation.objects.filter(
+        attempt=attempt,
+        status=PaymentReconciliation.Status.MISMATCH,
+    ).exists()
+
+
+def test_zarinpal_adapter_uses_official_v4_endpoints_and_rial_amounts() -> None:
+    provider = RecordingZarinPalProvider()
+    authority = "A12345678901234567890123456789012345"
+
+    request = provider.request_payment(
+        amount_rial=1_000,
+        callback_url="https://api.example.test/callback/",
+        description="VISIO payment",
+    )
+    verify = provider.verify_payment(amount_rial=1_000, authority=authority)
+    reverse = provider.reverse_payment(authority=authority)
+    refund_id = provider.refund_payment(
+        session_id="session-1",
+        amount_rial=1_000,
+        description="refund",
+        reason="CUSTOMER_REQUEST",
+    )
+
+    assert provider.calls[0][0] == "https://payment.zarinpal.com/pg/v4/payment/request.json"
+    assert provider.calls[0][1]["amount"] == 1_000
+    assert provider.calls[1][0] == "https://payment.zarinpal.com/pg/v4/payment/verify.json"
+    assert provider.calls[1][1]["amount"] == 1_000
+    assert provider.calls[2][0] == "https://payment.zarinpal.com/pg/v4/payment/reverse.json"
+    assert provider.calls[3][0] == "https://next.zarinpal.com/api/v4/graphql/"
+    assert provider.calls[3][2] == "access-test"
+    assert request.redirect_url == f"https://payment.zarinpal.com/pg/StartPay/{authority}"
+    assert verify.ref_id == "123456"
+    assert reverse.code == 100
+    assert refund_id == "refund-1"
+'''
+          if "test_same_idempotency_key_concurrency_never_duplicates_provider_request" in text:
+              raise SystemExit("HARDENING_TESTS_ALREADY_PRESENT")
+          tests.write_text(text + appendix)
+          PY
+      - name: Generate migration with Django 5.2.17
+        run: uv run python manage.py makemigrations payments --noinput
+      - name: Apply mechanical formatting and lint fixes
+        run: |
+          uv run ruff format apps/payments/models.py apps/payments/services.py apps/payments/migrations tests/test_b07_payments.py
+          uv run ruff check --fix apps/payments/models.py apps/payments/services.py apps/payments/migrations tests/test_b07_payments.py
+          uv run ruff format apps/payments/models.py apps/payments/services.py apps/payments/migrations tests/test_b07_payments.py
+      - name: Validate generated state before commit
+        run: |
+          uv run python manage.py makemigrations --check --dry-run
+          uv run ruff format --check apps/payments tests/test_b07_payments.py
+          uv run ruff check apps/payments tests/test_b07_payments.py
+          uv run mypy apps/payments tests/test_b07_payments.py
+      - name: Commit hardening and generated migration
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/payments tests/test_b07_payments.py
+          git diff --cached --check
+          git commit -m 'B07: harden financial truth and payment concurrency'
+          git push origin HEAD:phase/visio-b07-payment-reconciliation
