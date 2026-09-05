@@ -63,6 +63,11 @@ class PaymentAttempt(models.Model):
                 condition=~models.Q(provider_authority=""),
                 name="payments_provider_authority_unique",
             ),
+            models.UniqueConstraint(
+                fields=("order",),
+                condition=models.Q(status__in=("requesting", "pending", "verifying", "verified")),
+                name="payments_one_active_attempt_per_order",
+            ),
             models.CheckConstraint(
                 condition=models.Q(amount_toman__gte=0),
                 name="payments_amount_toman_nonnegative",

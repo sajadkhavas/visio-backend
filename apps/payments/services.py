@@ -12,6 +12,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.commerce.services import InventoryUnavailableError, ReservationStateError
 from apps.orders.models import Order
 from apps.orders.services import OrderError, confirm_order_after_verified_payment
 
@@ -170,6 +171,8 @@ def _prepare_attempt(
                 raise PaymentConflictError("Payment idempotency key belongs to another provider.")
             if existing.status == PaymentAttempt.Status.VERIFIED:
                 return existing, False
+            if existing.status == PaymentAttempt.Status.REQUESTING:
+                raise PaymentConflictError("Payment request is already in progress.")
 
         if order.status != Order.Status.PENDING_PAYMENT:
             raise PaymentConflictError("Only a pending-payment order can start a payment.")
@@ -330,18 +333,17 @@ def _apply_verified_result(
     *,
     at: datetime,
 ) -> PaymentVerificationOutcome:
+    digest = _digest_verify(result)
+
+    # Provider truth must survive any later order/inventory mismatch.
     with transaction.atomic():
         attempt = (
             PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)
         )
         if attempt.status == PaymentAttempt.Status.VERIFIED:
             return _verified_outcome(attempt)
-
         order = Order.objects.select_for_update().get(pk=attempt.order_id)
-        expected_rial = int(order.payable_toman) * 10
-        if int(attempt.amount_rial) != expected_rial:
-            raise PaymentConflictError("Payment amount no longer matches immutable order truth.")
-
+        amount_matches = int(attempt.amount_rial) == int(order.payable_toman) * 10
         attempt.status = PaymentAttempt.Status.VERIFIED
         attempt.provider_code = result.code
         attempt.provider_message = result.message[:500]
@@ -364,11 +366,32 @@ def _apply_verified_result(
                 "updated_at",
             )
         )
+        order_id = order.id
 
-        digest = _digest_verify(result)
+    with transaction.atomic():
+        attempt = (
+            PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)
+        )
+        order = Order.objects.select_for_update().get(pk=order_id)
+        if not amount_matches:
+            PaymentReconciliation.objects.create(
+                attempt=attempt,
+                status=PaymentReconciliation.Status.MISMATCH,
+                provider_code=result.code,
+                provider_ref_id=result.ref_id,
+                provider_payload_digest=digest,
+                detail="Verified provider amount does not match server-authoritative order amount.",
+                checked_at=at,
+            )
+            attempt.order = order
+            return PaymentVerificationOutcome(
+                attempt=attempt,
+                order_confirmed=False,
+                reconciliation_required=True,
+            )
         try:
             confirmed_order = confirm_order_after_verified_payment(order.id, at=at)
-        except OrderError as exc:
+        except (OrderError, InventoryUnavailableError, ReservationStateError) as exc:
             PaymentReconciliation.objects.create(
                 attempt=attempt,
                 status=PaymentReconciliation.Status.MISMATCH,
@@ -384,7 +407,6 @@ def _apply_verified_result(
                 order_confirmed=False,
                 reconciliation_required=True,
             )
-
         PaymentReconciliation.objects.create(
             attempt=attempt,
             status=PaymentReconciliation.Status.MATCHED,
@@ -418,11 +440,12 @@ def verify_attempt(
             raise PaymentConflictError("Payment attempt belongs to another provider.")
         if attempt.status == PaymentAttempt.Status.VERIFIED:
             return _verified_outcome(attempt)
+        if attempt.status == PaymentAttempt.Status.VERIFYING:
+            raise PaymentConflictError("Payment verification is already in progress.")
         if not attempt.provider_authority:
             raise PaymentConflictError("Payment attempt has no provider authority.")
         if attempt.status not in {
             PaymentAttempt.Status.PENDING,
-            PaymentAttempt.Status.VERIFYING,
             PaymentAttempt.Status.FAILED,
             PaymentAttempt.Status.CANCELLED,
             PaymentAttempt.Status.EXPIRED,
