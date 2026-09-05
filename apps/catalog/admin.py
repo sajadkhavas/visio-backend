@@ -19,7 +19,7 @@ from .models import (
 )
 
 
-class AuditedCatalogAdmin(admin.ModelAdmin[models.Model]):
+class AuditedCatalogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request: HttpRequest, obj: models.Model | None = None) -> bool:
         return False
 
