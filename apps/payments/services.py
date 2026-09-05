@@ -160,9 +160,6 @@ def _prepare_attempt(
     with transaction.atomic():
         User.objects.select_for_update().only("pk").get(pk=user.pk)
         order = _locked_owned_order(user, order_public_id)
-        if order.status != Order.Status.PENDING_PAYMENT:
-            raise PaymentConflictError("Only a pending-payment order can start a payment.")
-
         existing = (
             PaymentAttempt.objects.select_for_update()
             .filter(order=order, idempotency_key=idempotency_key)
@@ -173,6 +170,11 @@ def _prepare_attempt(
                 raise PaymentConflictError("Payment idempotency key belongs to another provider.")
             if existing.status == PaymentAttempt.Status.VERIFIED:
                 return existing, False
+
+        if order.status != Order.Status.PENDING_PAYMENT:
+            raise PaymentConflictError("Only a pending-payment order can start a payment.")
+
+        if existing is not None:
             if existing.provider_authority and existing.status in {
                 PaymentAttempt.Status.PENDING,
                 PaymentAttempt.Status.VERIFYING,

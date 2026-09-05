@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -172,7 +173,7 @@ def authenticated_client(user: User) -> Client:
     return client
 
 
-def test_payment_start_uses_exact_rial_conversion_and_is_idempotent(settings: object) -> None:
+def test_payment_start_uses_exact_rial_conversion_and_is_idempotent(settings: Any) -> None:
     user, order = prepare_pending_order(
         email="payment-start@example.com",
         slug="payment-start",
@@ -213,7 +214,7 @@ def test_payment_start_uses_exact_rial_conversion_and_is_idempotent(settings: ob
 
 
 def test_ok_callback_requires_provider_verify_and_duplicate_callback_is_idempotent(
-    settings: object,
+    settings: Any,
 ) -> None:
     user, order = prepare_pending_order(
         email="payment-verify@example.com",
@@ -260,7 +261,7 @@ def test_ok_callback_requires_provider_verify_and_duplicate_callback_is_idempote
     )
 
 
-def test_non_ok_callback_never_cancels_order_or_consumes_inventory(settings: object) -> None:
+def test_non_ok_callback_never_cancels_order_or_consumes_inventory(settings: Any) -> None:
     user, order = prepare_pending_order(
         email="payment-cancelled@example.com",
         slug="payment-cancelled",
@@ -291,7 +292,7 @@ def test_non_ok_callback_never_cancels_order_or_consumes_inventory(settings: obj
 
 
 def test_forged_ok_callback_cannot_confirm_without_authoritative_verification(
-    settings: object,
+    settings: Any,
 ) -> None:
     user, order = prepare_pending_order(
         email="payment-forged@example.com",
@@ -325,7 +326,7 @@ def test_forged_ok_callback_cannot_confirm_without_authoritative_verification(
 
 
 def test_verified_payment_after_order_cancel_is_preserved_as_reconciliation_mismatch(
-    settings: object,
+    settings: Any,
 ) -> None:
     user, order = prepare_pending_order(
         email="payment-race@example.com",
@@ -356,7 +357,7 @@ def test_verified_payment_after_order_cancel_is_preserved_as_reconciliation_mism
 
 
 def test_reconciliation_recovers_missed_callback_and_replay_after_verification_is_safe(
-    settings: object,
+    settings: Any,
 ) -> None:
     user, order = prepare_pending_order(
         email="payment-reconcile@example.com",
@@ -389,7 +390,7 @@ def test_reconciliation_recovers_missed_callback_and_replay_after_verification_i
     assert len(provider.verify_calls) == 1
 
 
-def test_database_enforces_exact_toman_to_rial_contract(settings: object) -> None:
+def test_database_enforces_exact_toman_to_rial_contract(settings: Any) -> None:
     user, order = prepare_pending_order(
         email="payment-money-db@example.com",
         slug="payment-money-db",
@@ -427,7 +428,7 @@ def test_public_api_fails_closed_when_payments_are_disabled() -> None:
     assert PaymentAttempt.objects.count() == 0
 
 
-def test_payment_detail_is_user_scoped(settings: object) -> None:
+def test_payment_detail_is_user_scoped(settings: Any) -> None:
     owner, order = prepare_pending_order(
         email="payment-owner@example.com",
         slug="payment-owner",
@@ -448,7 +449,7 @@ def test_payment_detail_is_user_scoped(settings: object) -> None:
     assert response.status_code == 404
 
 
-def test_payment_attempt_ids_are_uuid_values(settings: object) -> None:
+def test_payment_attempt_ids_are_uuid_values(settings: Any) -> None:
     user, order = prepare_pending_order(
         email="payment-uuid@example.com",
         slug="payment-uuid",
