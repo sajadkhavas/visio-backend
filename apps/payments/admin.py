@@ -5,7 +5,7 @@ from .models import PaymentAttempt, PaymentReconciliation
 
 
 @admin.register(PaymentAttempt)
-class PaymentAttemptAdmin(admin.ModelAdmin[PaymentAttempt]):
+class PaymentAttemptAdmin(admin.ModelAdmin):
     list_display = (
         "created_at",
         "order",
@@ -56,7 +56,7 @@ class PaymentAttemptAdmin(admin.ModelAdmin[PaymentAttempt]):
 
 
 @admin.register(PaymentReconciliation)
-class PaymentReconciliationAdmin(admin.ModelAdmin[PaymentReconciliation]):
+class PaymentReconciliationAdmin(admin.ModelAdmin):
     list_display = ("checked_at", "attempt", "status", "provider_code", "provider_ref_id")
     list_filter = ("status", "checked_at")
     search_fields = ("attempt__order__public_id", "provider_ref_id", "detail")
