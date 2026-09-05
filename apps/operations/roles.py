@@ -27,7 +27,9 @@ CATALOG_MODELS = (
 )
 
 
-def _model_permissions(app_label: str, model: str, actions: tuple[str, ...]) -> tuple[PermissionKey, ...]:
+def _model_permissions(
+    app_label: str, model: str, actions: tuple[str, ...]
+) -> tuple[PermissionKey, ...]:
     return tuple((app_label, f"{action}_{model}") for action in actions)
 
 
@@ -121,9 +123,14 @@ def sync_staff_roles(*, dry_run: bool = False) -> dict[str, tuple[str, ...]]:
     resolved: dict[str, tuple[str, ...]] = {}
     with transaction.atomic():
         for role in ROLE_MATRIX:
-            permissions = [_resolve_permission(app_label, codename) for app_label, codename in role.permissions]
+            permissions = [
+                _resolve_permission(app_label, codename) for app_label, codename in role.permissions
+            ]
             resolved[role.name] = tuple(
-                sorted(f"{permission.content_type.app_label}.{permission.codename}" for permission in permissions)
+                sorted(
+                    f"{permission.content_type.app_label}.{permission.codename}"
+                    for permission in permissions
+                )
             )
             if dry_run:
                 continue

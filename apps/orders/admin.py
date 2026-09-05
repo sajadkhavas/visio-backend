@@ -11,7 +11,14 @@ from .services import OrderError
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("public_id", "user", "status", "payable_toman", "status_changed_at", "created_at")
+    list_display = (
+        "public_id",
+        "user",
+        "status",
+        "payable_toman",
+        "status_changed_at",
+        "created_at",
+    )
     list_filter = ("status", "created_at")
     search_fields = ("public_id", "user__email")
     ordering = ("-created_at",)
@@ -44,7 +51,9 @@ class OrderAdmin(admin.ModelAdmin):
         return False
 
     def save_model(self, request: HttpRequest, obj: Order, form: object, change: bool) -> None:
-        raise ValidationError("Orders cannot be edited directly; use the controlled fulfillment actions.")
+        raise ValidationError(
+            "Orders cannot be edited directly; use the controlled fulfillment actions."
+        )
 
     def _advance_selected(
         self,
@@ -89,7 +98,13 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderLine)
 class OrderLineAdmin(admin.ModelAdmin):
-    list_display = ("order", "source_variant_sku", "quantity", "unit_price_toman", "line_total_toman")
+    list_display = (
+        "order",
+        "source_variant_sku",
+        "quantity",
+        "unit_price_toman",
+        "line_total_toman",
+    )
     search_fields = ("order__public_id", "source_variant_sku", "source_product_name")
     readonly_fields = (
         "id",

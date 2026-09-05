@@ -48,10 +48,14 @@ class PaymentAttemptAdmin(admin.ModelAdmin):
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
 
-    def has_change_permission(self, request: HttpRequest, obj: PaymentAttempt | None = None) -> bool:
+    def has_change_permission(
+        self, request: HttpRequest, obj: PaymentAttempt | None = None
+    ) -> bool:
         return False
 
-    def has_delete_permission(self, request: HttpRequest, obj: PaymentAttempt | None = None) -> bool:
+    def has_delete_permission(
+        self, request: HttpRequest, obj: PaymentAttempt | None = None
+    ) -> bool:
         return False
 
 

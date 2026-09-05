@@ -31,7 +31,9 @@ if PAYMENTS_ENABLED:
 
 if NOTIFICATIONS_ENABLED:
     if NOTIFICATION_CHANNEL != "email":
-        raise ImproperlyConfigured("NOTIFICATION_CHANNEL must be email when notifications are enabled.")
+        raise ImproperlyConfigured(
+            "NOTIFICATION_CHANNEL must be email when notifications are enabled."
+        )
     development_backends = {
         "django.core.mail.backends.console.EmailBackend",
         "django.core.mail.backends.locmem.EmailBackend",
@@ -41,7 +43,9 @@ if NOTIFICATIONS_ENABLED:
     if EMAIL_BACKEND in development_backends:
         raise ImproperlyConfigured("A production-capable EMAIL_BACKEND is required.")
     if not DEFAULT_FROM_EMAIL or DEFAULT_FROM_EMAIL == "webmaster@localhost":
-        raise ImproperlyConfigured("DEFAULT_FROM_EMAIL must be configured for production notifications.")
+        raise ImproperlyConfigured(
+            "DEFAULT_FROM_EMAIL must be configured for production notifications."
+        )
     if EMAIL_USE_TLS and EMAIL_USE_SSL:
         raise ImproperlyConfigured("EMAIL_USE_TLS and EMAIL_USE_SSL cannot both be enabled.")
     if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend" and not EMAIL_HOST:

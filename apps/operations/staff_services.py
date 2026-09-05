@@ -99,7 +99,9 @@ def set_price_as_staff(
             before = {
                 "amountToman": int(existing.amount_toman),
                 "compareAtToman": (
-                    int(existing.compare_at_toman) if existing.compare_at_toman is not None else None
+                    int(existing.compare_at_toman)
+                    if existing.compare_at_toman is not None
+                    else None
                 ),
                 "isActive": existing.is_active,
             }
@@ -107,7 +109,9 @@ def set_price_as_staff(
             price.amount_toman = amount_toman
             price.compare_at_toman = compare_at_toman
             price.is_active = is_active
-            price.save(update_fields=("amount_toman", "compare_at_toman", "is_active", "updated_at"))
+            price.save(
+                update_fields=("amount_toman", "compare_at_toman", "is_active", "updated_at")
+            )
         else:
             price = VariantPrice.objects.create(
                 variant_id=variant_id,
@@ -117,7 +121,9 @@ def set_price_as_staff(
             )
         after = {
             "amountToman": int(price.amount_toman),
-            "compareAtToman": int(price.compare_at_toman) if price.compare_at_toman is not None else None,
+            "compareAtToman": int(price.compare_at_toman)
+            if price.compare_at_toman is not None
+            else None,
             "isActive": price.is_active,
         }
         if before != after:

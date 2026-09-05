@@ -50,12 +50,18 @@ class AuditEvent(models.Model):
     class Meta:
         ordering = ("sequence",)
         indexes = [
-            models.Index(fields=("object_type", "object_id", "sequence"), name="ops_audit_object_idx"),
+            models.Index(
+                fields=("object_type", "object_id", "sequence"), name="ops_audit_object_idx"
+            ),
             models.Index(fields=("action", "sequence"), name="ops_audit_action_idx"),
         ]
         constraints = [
-            models.CheckConstraint(condition=models.Q(sequence__gt=0), name="ops_audit_sequence_positive"),
-            models.CheckConstraint(condition=~models.Q(event_hash=""), name="ops_audit_hash_nonempty"),
+            models.CheckConstraint(
+                condition=models.Q(sequence__gt=0), name="ops_audit_sequence_positive"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(event_hash=""), name="ops_audit_hash_nonempty"
+            ),
         ]
         permissions = [
             ("verify_audit_chain", "Can verify the operational audit chain"),
@@ -102,7 +108,9 @@ class NotificationOutbox(models.Model):
     class Meta:
         ordering = ("created_at", "id")
         indexes = [
-            models.Index(fields=("status", "available_at", "created_at"), name="ops_notify_ready_idx"),
+            models.Index(
+                fields=("status", "available_at", "created_at"), name="ops_notify_ready_idx"
+            ),
             models.Index(fields=("event_type", "created_at"), name="ops_notify_event_idx"),
         ]
         constraints = [
@@ -142,7 +150,9 @@ class NotificationDeliveryAttempt(models.Model):
                 fields=("notification", "attempt_no"),
                 name="ops_notify_attempt_unique",
             ),
-            models.CheckConstraint(condition=models.Q(attempt_no__gt=0), name="ops_notify_attempt_positive"),
+            models.CheckConstraint(
+                condition=models.Q(attempt_no__gt=0), name="ops_notify_attempt_positive"
+            ),
         ]
 
     def save(self, *args: Any, **kwargs: Any) -> None:

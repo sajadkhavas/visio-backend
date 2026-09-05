@@ -137,7 +137,9 @@ def test_operations_summary_requires_explicit_permission() -> None:
 
     assert authenticated_client(normal).get("/api/v1/staff/operations/summary/").status_code == 403
     assert (
-        authenticated_client(staff_without_perm).get("/api/v1/staff/operations/summary/").status_code
+        authenticated_client(staff_without_perm)
+        .get("/api/v1/staff/operations/summary/")
+        .status_code
         == 403
     )
     response = authenticated_client(staff_with_perm).get("/api/v1/staff/operations/summary/")
@@ -206,7 +208,9 @@ def test_staff_inventory_mutation_preserves_active_reservation_invariant(setting
         email="inventory-staff@example.com",
         slug="inventory-staff",
     )
-    reservation = InventoryReservation.objects.select_related("inventory").get(order_line__order=order)
+    reservation = InventoryReservation.objects.select_related("inventory").get(
+        order_line__order=order
+    )
     actor = staff_user(
         "catalog-ops@example.com",
         permission("commerce", "change_variantinventory"),
@@ -301,9 +305,12 @@ def test_payment_and_order_confirmation_notifications_are_deduplicated(settings:
         slug="payment-notification",
     )
 
-    assert NotificationOutbox.objects.filter(
-        dedupe_key=f"order:{order.id}:status:{Order.Status.CONFIRMED}"
-    ).count() == 1
+    assert (
+        NotificationOutbox.objects.filter(
+            dedupe_key=f"order:{order.id}:status:{Order.Status.CONFIRMED}"
+        ).count()
+        == 1
+    )
     payment_notification = NotificationOutbox.objects.get(event_type="payment.verified")
     assert payment_notification.recipient == "payment-notification@example.com"
 

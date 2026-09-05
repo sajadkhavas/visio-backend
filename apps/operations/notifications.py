@@ -31,7 +31,9 @@ class NotificationSender(Protocol):
 class DjangoEmailSender:
     def send(self, notification: NotificationOutbox) -> None:
         if notification.channel != NotificationOutbox.Channel.EMAIL:
-            raise NotificationConfigurationError("DjangoEmailSender only supports email notifications.")
+            raise NotificationConfigurationError(
+                "DjangoEmailSender only supports email notifications."
+            )
         sent = EmailMessage(
             subject=notification.subject,
             body=notification.body,
@@ -94,7 +96,9 @@ def queue_notification(
             or notification.subject != subject_value
             or notification.body != body_value
         ):
-            raise NotificationConflictError("Notification dedupe key was reused with different content.")
+            raise NotificationConflictError(
+                "Notification dedupe key was reused with different content."
+            )
         return notification
 
     if settings.NOTIFICATIONS_ENABLED and settings.NOTIFICATIONS_AUTO_DISPATCH:
@@ -120,9 +124,7 @@ def dispatch_notification(
         notification.attempt_count += 1
         notification.last_error = ""
         notification.updated_at = now
-        notification.save(
-            update_fields=("status", "attempt_count", "last_error", "updated_at")
-        )
+        notification.save(update_fields=("status", "attempt_count", "last_error", "updated_at"))
         attempt_no = notification.attempt_count
 
     try:
@@ -152,9 +154,7 @@ def dispatch_notification(
         notification.sent_at = sent_at
         notification.last_error = ""
         notification.updated_at = sent_at
-        notification.save(
-            update_fields=("status", "sent_at", "last_error", "updated_at")
-        )
+        notification.save(update_fields=("status", "sent_at", "last_error", "updated_at"))
         NotificationDeliveryAttempt.objects.create(
             notification=notification,
             attempt_no=attempt_no,
