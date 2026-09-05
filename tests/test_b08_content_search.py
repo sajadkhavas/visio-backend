@@ -27,7 +27,9 @@ def create_content(
     seo_title: str = "",
     seo_description: str = "",
 ) -> ContentEntry:
-    published_at = timezone.now() + published_offset if status == ContentEntry.Status.PUBLISHED else None
+    published_at = (
+        timezone.now() + published_offset if status == ContentEntry.Status.PUBLISHED else None
+    )
     return ContentEntry.objects.create(
         kind=kind,
         slug=slug,
