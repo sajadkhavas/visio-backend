@@ -10,7 +10,6 @@ from apps.operations.audit import append_audit_event
 
 from .models import Address, User
 
-
 try:
     admin.site.unregister(Group)
 except admin.sites.NotRegistered:

@@ -4,11 +4,6 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
-from django.contrib import admin
-from django.contrib.auth.models import Group, Permission
-from django.core.exceptions import PermissionDenied, ValidationError
-from django.test import RequestFactory
-
 from apps.accounts.admin import VisioUserAdmin
 from apps.accounts.models import User
 from apps.commerce.models import InventoryReservation
@@ -20,6 +15,11 @@ from apps.operations.roles import ROLE_MATRIX, sync_staff_roles
 from apps.operations.staff_services import advance_order_as_staff, set_inventory_as_staff
 from apps.orders.models import Order
 from apps.payments.services import reconcile_attempt, start_payment
+from django.contrib import admin
+from django.contrib.auth.models import Group, Permission
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.test import RequestFactory
+
 from tests.test_b07_payments import FakeProvider, authenticated_client, prepare_pending_order
 
 pytestmark = pytest.mark.django_db(transaction=True)
