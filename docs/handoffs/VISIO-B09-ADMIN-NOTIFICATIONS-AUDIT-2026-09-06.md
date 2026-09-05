@@ -2,19 +2,30 @@
 
 ## Resume truth
 
-B09 implementation is complete on its dedicated branch and its implementation exact-head Backend Quality Gate is green. This handoff is part of the application closure/freeze head; the final closure Gate, application PR/merge, post-merge Gate and docs-registry transition still must complete before B09 is globally Done and B10 receives an exact START_SHA.
+B09 application scope is implemented, frozen, exact-head green, merged with the expected SHA and post-merge green on backend `main`.
+
+The only remaining B09 closure work is this docs-only registry acceptance plus frontend tracker synchronization. B10 must not start until the registry PR merges, its resulting backend `main` Gate passes and that final post-registry-green `main` SHA is registered as exact B10 START_SHA.
 
 ## Exact coordinates
 
 - exact B09 START_SHA: `5e4b71facf5393187b7c15e829fee86395866adb`
 - implementation branch: `phase/visio-b09-admin-notifications-audit`
 - implementation END_SHA: `561922cb4eb80b9ee7edc68842b6ba92a22cf9f9`
+- closure/freeze head: `6c9e7bd0c84754f2251632d285b4b50e5d252a41`
+- freeze ref: `freeze/visio-backend-b09-20260906`
+- backend application PR: #18 — MERGED with expected head SHA
+- accepted application merge: `48549546d76b99087d0d01dd13522ba65a277209`
 - frontend tracker: Issue #57 under Master #39
-- implementation Gate #364 / run `33990690444` — PASS
-- closure/freeze head: pending final exact-head closure acceptance
-- freeze ref: pending final exact-head closure acceptance
 
-## Implementation evidence
+## Accepted gates
+
+- implementation Gate #364 / run `33990690444` — PASS
+- closure exact-head Gate #367 / run `33990836720` — PASS
+- application PR exact-head Gate #368 / run `33990915523` — PASS
+- application post-merge Gate #369 / run `33990998542` — PASS
+- unresolved PR review threads: 0
+
+Implementation/merge evidence:
 
 - Django runtime: 5.2.17
 - Python: 3.13.15
@@ -98,24 +109,23 @@ B09 implementation is complete on its dedicated branch and its implementation ex
 - Django 5.2 transactions / `on_commit()`: https://docs.djangoproject.com/en/5.2/topics/db/transactions/
 - Django 5.2 email/backends: https://docs.djangoproject.com/en/5.2/topics/email/
 
-## Remaining closure sequence
+## Remaining registry sequence
 
-1. exact closure/freeze head Gate must pass;
-2. create immutable B09 freeze ref at the accepted closure head;
-3. application PR to backend `main` must be reviewed with zero blocking threads;
-4. PR must merge with the expected head SHA;
-5. backend `main` post-merge Gate must pass;
-6. docs-only registry branch/PR must record final B09 evidence and exact B10 transition;
-7. registry exact-head and post-merge gates must pass;
-8. frontend Issue #57 and Master #39 must be updated/closed;
-9. only the resulting final post-registry-green backend `main` SHA becomes exact B10 START_SHA.
+1. docs-only registry branch exact-head Backend Quality Gate must pass;
+2. open docs-only registry PR against application-accepted `main`;
+3. unresolved blocking review threads must remain 0;
+4. merge registry PR with its expected head SHA;
+5. resulting backend `main` post-registry Gate must pass;
+6. only then declare that resulting `main` SHA exact B10 START_SHA;
+7. register B10 START_SHA/dedicated branch in frontend Issue #58 and Master #39;
+8. update and close B09 Issue #57.
 
 ## B10 boundary
 
-Next phase after registry acceptance:
+Next phase:
 
 `B10 — Backend Security, Reliability & Release Gate`
 
-B10 must preserve B09 role/audit/outbox contracts and owns final backend hardening, dependency/security review, auth/session/CSRF/rate-limit review, fail-closed production settings, health/readiness/logging, backup/restore/recovery and release runbook/freeze.
+B10 must preserve B09 role/audit/outbox contracts and owns final backend hardening, dependency/security review, auth/session/CSRF/rate-limit review, fail-closed production settings, health/readiness/logging, backup/restore/recovery, performance/query review and release runbook/freeze.
 
 Do not start B10 from B09 implementation END_SHA or application merge SHA. Use only the final post-registry-green backend `main` SHA.
