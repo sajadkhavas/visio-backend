@@ -29,6 +29,24 @@ if PAYMENTS_ENABLED:
     if ZARINPAL_SANDBOX:
         raise ImproperlyConfigured("ZARINPAL_SANDBOX cannot be enabled in production.")
 
+if NOTIFICATIONS_ENABLED:
+    if NOTIFICATION_CHANNEL != "email":
+        raise ImproperlyConfigured("NOTIFICATION_CHANNEL must be email when notifications are enabled.")
+    development_backends = {
+        "django.core.mail.backends.console.EmailBackend",
+        "django.core.mail.backends.locmem.EmailBackend",
+        "django.core.mail.backends.dummy.EmailBackend",
+        "django.core.mail.backends.filebased.EmailBackend",
+    }
+    if EMAIL_BACKEND in development_backends:
+        raise ImproperlyConfigured("A production-capable EMAIL_BACKEND is required.")
+    if not DEFAULT_FROM_EMAIL or DEFAULT_FROM_EMAIL == "webmaster@localhost":
+        raise ImproperlyConfigured("DEFAULT_FROM_EMAIL must be configured for production notifications.")
+    if EMAIL_USE_TLS and EMAIL_USE_SSL:
+        raise ImproperlyConfigured("EMAIL_USE_TLS and EMAIL_USE_SSL cannot both be enabled.")
+    if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend" and not EMAIL_HOST:
+        raise ImproperlyConfigured("EMAIL_HOST is required for the SMTP email backend.")
+
 DEBUG = False
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
