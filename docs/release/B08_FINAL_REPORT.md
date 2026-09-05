@@ -1,16 +1,18 @@
-# B08 — Content, Search & Public Data APIs — Application Report
+# B08 — Content, Search & Public Data APIs — Final Report
 
 ## Status
 
-B08 application implementation is complete and implementation-head green. Application closure/freeze, final PR acceptance, merge, post-merge verification and the separate docs-only registry transition remain required before B08 can be marked fully closed.
+B08 application scope is **COMPLETED / MERGED / FROZEN / APPLICATION POST-MERGE GREEN**. This documentation-only registry transition records accepted evidence before B09 receives its exact START_SHA.
 
 ## Coordinates
 
 - B08 START_SHA: `6f921cb0a0dfd4e442a3d195ad70b7dc476cf348`
 - implementation branch: `phase/visio-b08-content-search-public-data`
 - implementation END_SHA: `c300ea1ef55533a010d98399160d7cdd5093e7f5`
-- implementation Gate run: `33981548113`
-- frontend tracker: Issue #56
+- closure/freeze head: `d49cc5fcddbbdf1369e1c87ae5457e6cd5361ca6`
+- freeze ref: `freeze/visio-backend-b08-20260905`
+- application PR: #16
+- accepted application merge SHA: `8085d050835a429bb5023959a37d9ad66f46ef44`
 
 ## Delivered domain
 
@@ -18,93 +20,51 @@ B08 adds durable backend authority for public editorial content and backend-auth
 
 ### Content authority
 
-The new `ContentEntry` domain provides:
+`ContentEntry` provides guide / magazine / policy kinds, draft/published/archived states, publication visibility, structured editorial body/source/media metadata, author/reviewer metadata, related-guide references, SEO metadata and server-derived search text.
 
-- guide / magazine / policy kinds;
-- draft / published / archived lifecycle;
-- publication visibility and future-publication protection;
-- structured body/source/media metadata;
-- author/reviewer and review dates;
-- related guide references;
-- SEO title/description fields;
-- server-derived search text;
-- minimal Django Admin registration.
+Public visibility requires both an explicit published state and a non-future publication timestamp. Draft, archived and future-dated rows are excluded from public APIs.
 
 ### Public APIs
 
 - `GET /api/v1/content/`
 - `GET /api/v1/content/{kind}/{slug}/`
 
-Public content is returned only when it is explicitly published and its publication time is not in the future.
-
-The list contract supports bounded search, kind filtering, deterministic sorting and bounded pagination. Unknown parameters fail closed.
+The list contract supports bounded kind filtering, text search, deterministic sorting and page-size-limited pagination. Unknown query parameters fail closed.
 
 ### Catalog search
 
-B08 extends the existing public catalog list with a bounded backend `q` search over product name, brand, category, material, shape and color.
-
-Search begins from the existing B02 public product queryset, so it cannot reveal unpublished/future/missing-media products and it does not replace B03 commerce truth.
+The existing public catalog endpoint accepts a bounded backend `q` search over approved product fields. Search starts from the accepted B02 public-product queryset, so it cannot bypass publication/media rules and does not replace B03 price/inventory truth.
 
 ## Frontend authority boundary
 
-The frozen frontend was audited at:
-
-`4c52c46cecea877b9673831c4b4a0d75d7b3290a`
-
-Its guides/magazine fixture data and client-side search remain untouched in B08. I00 owns replacing those local authority paths with accepted backend APIs.
-
-B08 therefore creates the production-capable backend authority without invalidating the frozen frontend baseline.
+The frozen frontend baseline `4c52c46cecea877b9673831c4b4a0d75d7b3290a` was audited. Its guide/magazine fixtures and client-side search were not rewritten in B08. They remain non-authoritative and I00 owns wiring the frontend to accepted backend APIs.
 
 ## Search architecture
 
-Current project requirements do not justify Elasticsearch/OpenSearch or another distributed search service.
-
-B08 uses bounded PostgreSQL-backed queries and keeps the upgrade path explicit: if measured scale/latency demands it, PostgreSQL full-text search plus an appropriate GIN index is the first supported evolution; `pg_trgm` is reserved for proven similarity/substring needs.
+B08 intentionally does not introduce Elasticsearch/OpenSearch. Current requirements are met with bounded PostgreSQL-backed queries. If measured scale/latency later requires an upgrade, PostgreSQL full-text search and an appropriate GIN index are the first supported evolution; `pg_trgm` is reserved for proven similarity/substring needs.
 
 ## Database integrity
 
-The content schema enforces:
+The content schema enforces unique `(kind, slug)`, requires `published_at` for published rows, adds a public-query index and validates expected JSON shapes at the Django model boundary.
 
-- unique `(kind, slug)`;
-- published rows require `published_at`;
-- public-query index for status/kind/publication/order;
-- model-level JSON shape checks.
+`apps/content/migrations/0001_initial.py` was generated by Django 5.2.17. The temporary write-enabled migration generator workflow was removed before acceptance.
 
-Migration:
+## Gate evidence
 
-`apps/content/migrations/0001_initial.py`
-
-was generated by Django 5.2.17. The temporary migration generator workflow was removed before implementation acceptance.
-
-## Accepted implementation Gate
-
-Backend Quality Gate run `33981548113` on exact implementation END_SHA `c300ea1ef55533a010d98399160d7cdd5093e7f5`:
-
-- frozen dependency install — PASS
-- immutable GitHub Action pins — PASS
-- secret sanity — PASS
-- Ruff format — PASS
-- Ruff lint — PASS
-- strict mypy — PASS (`99 source files`)
-- Django checks — PASS
+- implementation Gate #289 / run `33981548113` on `c300ea1ef55533a010d98399160d7cdd5093e7f5` — PASS
+- closure / exact-head Gate #297 / run `33981702876` on `d49cc5fcddbbdf1369e1c87ae5457e6cd5361ca6` — PASS
+- unresolved PR review threads — 0
+- PR #16 merged using expected head SHA
+- accepted application merge: `8085d050835a429bb5023959a37d9ad66f46ef44`
+- application post-merge Gate #298 / run `33981807980` — PASS
 - migration drift — 0 / PASS
-- migrate from zero PostgreSQL 16.15 — PASS
-- PostgreSQL test suite — **96/96 PASS**
-- OpenAPI generation/validation — PASS
-- production deployment checks — PASS
-- Python compilation — PASS
+- migrate from empty PostgreSQL 16.15 — PASS
+- full PostgreSQL test suite — **96/96 PASS**
+- strict mypy — PASS (`99 source files`)
+- Ruff / Django checks / OpenAPI / deployment checks / action-pin and secret sanity / Python compilation — PASS
 
-## B09 boundary
+## B09 transition
 
-B09 may build richer staff/admin, notification and audit capabilities over B08, but must preserve:
+B09 owns privileged admin operations, permissions, durable audit evidence and notification abstractions. It may build richer content administration over B08 but must preserve publication/search authority as well as B02 catalog, B03 commerce and B07 payment truth.
 
-- publication visibility;
-- backend-only authority for public content/search;
-- B02 catalog publication rules;
-- B03 commerce truth;
-- B07 payment/provider truth;
-- search-text maintenance when bulk authoring/import paths are introduced.
-
-## Closure rule
-
-B08 is not fully closed by this report alone. The exact documentation closure head must pass the permanent quality gate, be frozen, have zero unresolved blocking PR threads, merge with expected head SHA, and pass post-merge `main` verification. A separate docs-only registry transition must then record accepted evidence and produce the exact B09 START_SHA.
+The exact B09 START_SHA is **not** the B08 application merge above. It becomes the resulting backend `main` SHA after this B08 registry documentation PR is exact-head green, merged with expected SHA, and its post-merge Backend Quality Gate passes. That SHA must then be registered in the master/frontend trackers before B09 implementation begins.
