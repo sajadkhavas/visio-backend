@@ -4,7 +4,7 @@ from .models import ContentEntry
 
 
 @admin.register(ContentEntry)
-class ContentEntryAdmin(admin.ModelAdmin):
+class ContentEntryAdmin(admin.ModelAdmin[ContentEntry]):
     list_display = ("title", "kind", "status", "published_at", "updated_at")
     list_filter = ("kind", "status", "author_kind")
     search_fields = ("title", "slug", "excerpt", "author_name")
