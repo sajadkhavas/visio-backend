@@ -1,8 +1,10 @@
 from typing import Any
 
 from django.contrib import admin
+from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import HttpRequest
 
@@ -10,9 +12,17 @@ from apps.operations.audit import append_audit_event
 
 from .models import Address, User
 
+
+def _require_staff_user(request: HttpRequest) -> User:
+    actor = request.user
+    if not isinstance(actor, User) or not actor.is_staff:
+        raise PermissionDenied("Authenticated staff user required for admin mutation.")
+    return actor
+
+
 try:
     admin.site.unregister(Group)
-except admin.sites.NotRegistered:
+except NotRegistered:
     pass
 
 
@@ -52,6 +62,7 @@ class VisioUserAdmin(UserAdmin):
         form: Any,
         change: bool,
     ) -> None:
+        actor = _require_staff_user(request)
         before = None
         if change and obj.pk:
             existing = User.objects.get(pk=obj.pk)
@@ -64,7 +75,7 @@ class VisioUserAdmin(UserAdmin):
         with transaction.atomic():
             super().save_model(request, obj, form, change)
             append_audit_event(
-                actor=request.user,
+                actor=actor,
                 action="account.updated" if change else "account.created",
                 object_type="accounts.User",
                 object_id=str(obj.pk),
@@ -87,10 +98,11 @@ class VisioUserAdmin(UserAdmin):
         formsets: Any,
         change: bool,
     ) -> None:
+        actor = _require_staff_user(request)
         with transaction.atomic():
             super().save_related(request, form, formsets, change)
             changed_data = set(getattr(form, "changed_data", ()))
-            if not request.user.is_superuser or not changed_data.intersection(
+            if not actor.is_superuser or not changed_data.intersection(
                 {"groups", "user_permissions"}
             ):
                 return
@@ -101,7 +113,7 @@ class VisioUserAdmin(UserAdmin):
                 for permission in user.user_permissions.select_related("content_type")
             )
             append_audit_event(
-                actor=request.user,
+                actor=actor,
                 action="account.authorization_assignments_updated",
                 object_type="accounts.User",
                 object_id=str(user.pk),
