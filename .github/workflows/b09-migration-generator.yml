@@ -22,10 +22,16 @@ jobs:
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: "5432"
     steps:
-      - name: Checkout exact head
+      - name: Checkout triggering head
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: true
+          fetch-depth: 0
+      - name: Fast-forward to current phase head only
+        run: |
+          set -Eeuo pipefail
+          git fetch origin phase/visio-b09-admin-notifications-audit
+          git merge --ff-only origin/phase/visio-b09-admin-notifications-audit
       - name: Set up exact Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
