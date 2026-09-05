@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.orders.models import Order
-from apps.orders.services import OrderTransitionError, confirm_order_after_verified_payment
+from apps.orders.services import OrderError, confirm_order_after_verified_payment
 
 from .models import PaymentAttempt, PaymentReconciliation
 from .providers import (
@@ -106,6 +106,25 @@ def _digest_verify(result: ProviderVerifyResult) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _order_payment_confirmed(order: Order) -> bool:
+    return order.status in {
+        Order.Status.CONFIRMED,
+        Order.Status.PROCESSING,
+        Order.Status.SHIPPED,
+        Order.Status.DELIVERED,
+    }
+
+
+def _verified_outcome(attempt: PaymentAttempt) -> PaymentVerificationOutcome:
+    latest = attempt.reconciliations.order_by("-checked_at", "id").first()
+    mismatch = latest is not None and latest.status == PaymentReconciliation.Status.MISMATCH
+    return PaymentVerificationOutcome(
+        attempt=attempt,
+        order_confirmed=_order_payment_confirmed(attempt.order),
+        reconciliation_required=mismatch,
+    )
+
+
 def _locked_owned_order(user: User, public_id: UUID) -> Order:
     try:
         return Order.objects.select_for_update().get(user=user, public_id=public_id)
@@ -192,7 +211,7 @@ def _prepare_attempt(
 def _mark_request_failure(attempt_id: UUID, exc: ProviderError, *, at: datetime) -> None:
     with transaction.atomic():
         attempt = PaymentAttempt.objects.select_for_update().get(pk=attempt_id)
-        if attempt.provider_authority:
+        if attempt.provider_authority or attempt.status == PaymentAttempt.Status.VERIFIED:
             return
         attempt.status = PaymentAttempt.Status.FAILED
         attempt.provider_message = str(exc)[:500]
@@ -216,7 +235,7 @@ def _record_request_success(
 ) -> PaymentAttempt:
     with transaction.atomic():
         attempt = PaymentAttempt.objects.select_for_update().get(pk=attempt_id)
-        if attempt.provider_authority:
+        if attempt.provider_authority or attempt.status == PaymentAttempt.Status.VERIFIED:
             return attempt
         attempt.provider_authority = result.authority
         attempt.provider_redirect_url = result.redirect_url
@@ -283,6 +302,8 @@ def start_payment(
 def _record_provider_error(attempt_id: UUID, exc: ProviderError, *, at: datetime) -> None:
     with transaction.atomic():
         attempt = PaymentAttempt.objects.select_for_update().get(pk=attempt_id)
+        if attempt.status == PaymentAttempt.Status.VERIFIED:
+            return
         attempt.status = PaymentAttempt.Status.FAILED
         attempt.provider_message = str(exc)[:500]
         attempt.status_changed_at = at
@@ -308,11 +329,7 @@ def _apply_verified_result(
     with transaction.atomic():
         attempt = PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)
         if attempt.status == PaymentAttempt.Status.VERIFIED:
-            return PaymentVerificationOutcome(
-                attempt=attempt,
-                order_confirmed=attempt.order.status != Order.Status.PENDING_PAYMENT,
-                reconciliation_required=False,
-            )
+            return _verified_outcome(attempt)
 
         order = Order.objects.select_for_update().get(pk=attempt.order_id)
         expected_rial = int(order.payable_toman) * 10
@@ -344,8 +361,8 @@ def _apply_verified_result(
 
         digest = _digest_verify(result)
         try:
-            confirm_order_after_verified_payment(order.id, at=at)
-        except OrderTransitionError as exc:
+            confirmed_order = confirm_order_after_verified_payment(order.id, at=at)
+        except OrderError as exc:
             PaymentReconciliation.objects.create(
                 attempt=attempt,
                 status=PaymentReconciliation.Status.MISMATCH,
@@ -355,6 +372,7 @@ def _apply_verified_result(
                 detail=f"Verified provider payment could not confirm order: {exc}"[:500],
                 checked_at=at,
             )
+            attempt.order = order
             return PaymentVerificationOutcome(
                 attempt=attempt,
                 order_confirmed=False,
@@ -370,6 +388,7 @@ def _apply_verified_result(
             detail="Provider verification matches server-authoritative order amount.",
             checked_at=at,
         )
+        attempt.order = confirmed_order
         return PaymentVerificationOutcome(
             attempt=attempt,
             order_confirmed=True,
@@ -386,22 +405,19 @@ def verify_attempt(
     payment_provider = _provider(provider)
     now = at or timezone.now()
     with transaction.atomic():
-        attempt = PaymentAttempt.objects.select_for_update().get(pk=attempt_id)
+        attempt = PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)
         if attempt.provider != payment_provider.name:
             raise PaymentConflictError("Payment attempt belongs to another provider.")
         if attempt.status == PaymentAttempt.Status.VERIFIED:
-            order_confirmed = attempt.order.status != Order.Status.PENDING_PAYMENT
-            return PaymentVerificationOutcome(
-                attempt=attempt,
-                order_confirmed=order_confirmed,
-                reconciliation_required=False,
-            )
+            return _verified_outcome(attempt)
         if not attempt.provider_authority:
             raise PaymentConflictError("Payment attempt has no provider authority.")
         if attempt.status not in {
             PaymentAttempt.Status.PENDING,
             PaymentAttempt.Status.VERIFYING,
             PaymentAttempt.Status.FAILED,
+            PaymentAttempt.Status.CANCELLED,
+            PaymentAttempt.Status.EXPIRED,
         }:
             raise PaymentConflictError(f"Payment in state {attempt.status!r} cannot be verified.")
         attempt.status = PaymentAttempt.Status.VERIFYING
@@ -444,11 +460,7 @@ def process_callback(
         attempt.updated_at = now
         attempt.save(update_fields=("callback_count", "last_callback_status", "updated_at"))
         if attempt.status == PaymentAttempt.Status.VERIFIED:
-            return PaymentVerificationOutcome(
-                attempt=attempt,
-                order_confirmed=attempt.order.status != Order.Status.PENDING_PAYMENT,
-                reconciliation_required=False,
-            )
+            return _verified_outcome(attempt)
         if callback_status.upper() != "OK":
             if attempt.status in {PaymentAttempt.Status.PENDING, PaymentAttempt.Status.VERIFYING}:
                 attempt.status = PaymentAttempt.Status.CANCELLED
