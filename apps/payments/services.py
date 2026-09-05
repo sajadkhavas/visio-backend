@@ -296,7 +296,9 @@ def start_payment(
         raise PaymentProviderError(str(exc)) from exc
 
     attempt = _record_request_success(attempt.id, result, at=timezone.now())
-    return PaymentStartResult(attempt=attempt, redirect_url=attempt.provider_redirect_url, created=created)
+    return PaymentStartResult(
+        attempt=attempt, redirect_url=attempt.provider_redirect_url, created=created
+    )
 
 
 def _record_provider_error(attempt_id: UUID, exc: ProviderError, *, at: datetime) -> None:
@@ -327,7 +329,9 @@ def _apply_verified_result(
     at: datetime,
 ) -> PaymentVerificationOutcome:
     with transaction.atomic():
-        attempt = PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)
+        attempt = (
+            PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)
+        )
         if attempt.status == PaymentAttempt.Status.VERIFIED:
             return _verified_outcome(attempt)
 
@@ -405,7 +409,9 @@ def verify_attempt(
     payment_provider = _provider(provider)
     now = at or timezone.now()
     with transaction.atomic():
-        attempt = PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)
+        attempt = (
+            PaymentAttempt.objects.select_for_update().select_related("order").get(pk=attempt_id)
+        )
         if attempt.provider != payment_provider.name:
             raise PaymentConflictError("Payment attempt belongs to another provider.")
         if attempt.status == PaymentAttempt.Status.VERIFIED:
@@ -424,9 +430,7 @@ def verify_attempt(
         attempt.verify_count += 1
         attempt.status_changed_at = now
         attempt.updated_at = now
-        attempt.save(
-            update_fields=("status", "verify_count", "status_changed_at", "updated_at")
-        )
+        attempt.save(update_fields=("status", "verify_count", "status_changed_at", "updated_at"))
         amount_rial = int(attempt.amount_rial)
         authority = attempt.provider_authority
 
@@ -449,9 +453,13 @@ def process_callback(
     now = at or timezone.now()
     with transaction.atomic():
         try:
-            attempt = PaymentAttempt.objects.select_for_update().select_related("order").get(
-                provider=payment_provider.name,
-                provider_authority=authority,
+            attempt = (
+                PaymentAttempt.objects.select_for_update()
+                .select_related("order")
+                .get(
+                    provider=payment_provider.name,
+                    provider_authority=authority,
+                )
             )
         except PaymentAttempt.DoesNotExist as exc:
             raise PaymentNotFoundError("Payment authority is unknown.") from exc

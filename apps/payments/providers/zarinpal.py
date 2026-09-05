@@ -34,7 +34,9 @@ class ZarinPalProvider:
         self.sandbox = sandbox
         self.timeout_seconds = timeout_seconds
         self.access_token = access_token.strip()
-        self.base_url = "https://sandbox.zarinpal.com" if sandbox else "https://payment.zarinpal.com"
+        self.base_url = (
+            "https://sandbox.zarinpal.com" if sandbox else "https://payment.zarinpal.com"
+        )
         self.graphql_url = "https://next.zarinpal.com/api/v4/graphql/"
 
     def _post_json(

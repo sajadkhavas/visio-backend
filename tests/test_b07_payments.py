@@ -251,10 +251,13 @@ def test_ok_callback_requires_provider_verify_and_duplicate_callback_is_idempote
     assert started.attempt.callback_count == 2
     assert started.attempt.verify_count == 1
     assert len(provider.verify_calls) == 1
-    assert PaymentReconciliation.objects.filter(
-        attempt=started.attempt,
-        status=PaymentReconciliation.Status.MATCHED,
-    ).count() == 1
+    assert (
+        PaymentReconciliation.objects.filter(
+            attempt=started.attempt,
+            status=PaymentReconciliation.Status.MATCHED,
+        ).count()
+        == 1
+    )
 
 
 def test_non_ok_callback_never_cancels_order_or_consumes_inventory(settings: object) -> None:

@@ -8,84 +8,156 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('orders', '0001_initial'),
+        ("orders", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PaymentAttempt',
+            name="PaymentAttempt",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('idempotency_key', models.UUIDField()),
-                ('provider', models.CharField(choices=[('zarinpal', 'ZarinPal')], max_length=24)),
-                ('status', models.CharField(choices=[('new', 'New'), ('requesting', 'Requesting'), ('pending', 'Pending'), ('verifying', 'Verifying'), ('verified', 'Verified'), ('failed', 'Failed'), ('cancelled', 'Cancelled'), ('expired', 'Expired')], default='new', max_length=24)),
-                ('amount_toman', models.DecimalField(decimal_places=0, max_digits=18)),
-                ('amount_rial', models.DecimalField(decimal_places=0, max_digits=19)),
-                ('currency_code', models.CharField(default='IRR', max_length=3)),
-                ('display_unit', models.CharField(default='تومان', max_length=16)),
-                ('provider_authority', models.CharField(blank=True, default='', max_length=64)),
-                ('provider_redirect_url', models.CharField(blank=True, default='', max_length=500)),
-                ('provider_ref_id', models.CharField(blank=True, default='', max_length=128)),
-                ('provider_code', models.IntegerField(blank=True, null=True)),
-                ('provider_message', models.CharField(blank=True, default='', max_length=500)),
-                ('masked_card', models.CharField(blank=True, default='', max_length=32)),
-                ('card_hash', models.CharField(blank=True, default='', max_length=128)),
-                ('last_callback_status', models.CharField(blank=True, default='', max_length=32)),
-                ('request_count', models.PositiveIntegerField(default=0)),
-                ('callback_count', models.PositiveIntegerField(default=0)),
-                ('verify_count', models.PositiveIntegerField(default=0)),
-                ('verified_at', models.DateTimeField(blank=True, null=True)),
-                ('status_changed_at', models.DateTimeField(default=django.utils.timezone.now)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='payment_attempts', to='orders.order')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("idempotency_key", models.UUIDField()),
+                ("provider", models.CharField(choices=[("zarinpal", "ZarinPal")], max_length=24)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("new", "New"),
+                            ("requesting", "Requesting"),
+                            ("pending", "Pending"),
+                            ("verifying", "Verifying"),
+                            ("verified", "Verified"),
+                            ("failed", "Failed"),
+                            ("cancelled", "Cancelled"),
+                            ("expired", "Expired"),
+                        ],
+                        default="new",
+                        max_length=24,
+                    ),
+                ),
+                ("amount_toman", models.DecimalField(decimal_places=0, max_digits=18)),
+                ("amount_rial", models.DecimalField(decimal_places=0, max_digits=19)),
+                ("currency_code", models.CharField(default="IRR", max_length=3)),
+                ("display_unit", models.CharField(default="تومان", max_length=16)),
+                ("provider_authority", models.CharField(blank=True, default="", max_length=64)),
+                ("provider_redirect_url", models.CharField(blank=True, default="", max_length=500)),
+                ("provider_ref_id", models.CharField(blank=True, default="", max_length=128)),
+                ("provider_code", models.IntegerField(blank=True, null=True)),
+                ("provider_message", models.CharField(blank=True, default="", max_length=500)),
+                ("masked_card", models.CharField(blank=True, default="", max_length=32)),
+                ("card_hash", models.CharField(blank=True, default="", max_length=128)),
+                ("last_callback_status", models.CharField(blank=True, default="", max_length=32)),
+                ("request_count", models.PositiveIntegerField(default=0)),
+                ("callback_count", models.PositiveIntegerField(default=0)),
+                ("verify_count", models.PositiveIntegerField(default=0)),
+                ("verified_at", models.DateTimeField(blank=True, null=True)),
+                ("status_changed_at", models.DateTimeField(default=django.utils.timezone.now)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "order",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="payment_attempts",
+                        to="orders.order",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-created_at', 'id'),
+                "ordering": ("-created_at", "id"),
             },
         ),
         migrations.CreateModel(
-            name='PaymentReconciliation',
+            name="PaymentReconciliation",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('status', models.CharField(choices=[('matched', 'Matched'), ('mismatch', 'Mismatch'), ('provider_error', 'Provider error')], max_length=24)),
-                ('provider_code', models.IntegerField(blank=True, null=True)),
-                ('provider_ref_id', models.CharField(blank=True, default='', max_length=128)),
-                ('provider_payload_digest', models.CharField(max_length=64)),
-                ('detail', models.CharField(blank=True, default='', max_length=500)),
-                ('checked_at', models.DateTimeField(default=django.utils.timezone.now)),
-                ('attempt', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reconciliations', to='payments.paymentattempt')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("matched", "Matched"),
+                            ("mismatch", "Mismatch"),
+                            ("provider_error", "Provider error"),
+                        ],
+                        max_length=24,
+                    ),
+                ),
+                ("provider_code", models.IntegerField(blank=True, null=True)),
+                ("provider_ref_id", models.CharField(blank=True, default="", max_length=128)),
+                ("provider_payload_digest", models.CharField(max_length=64)),
+                ("detail", models.CharField(blank=True, default="", max_length=500)),
+                ("checked_at", models.DateTimeField(default=django.utils.timezone.now)),
+                (
+                    "attempt",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="reconciliations",
+                        to="payments.paymentattempt",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-checked_at', 'id'),
+                "ordering": ("-checked_at", "id"),
             },
         ),
         migrations.AddConstraint(
-            model_name='paymentattempt',
-            constraint=models.UniqueConstraint(fields=('order', 'idempotency_key'), name='payments_order_request_key_unique'),
+            model_name="paymentattempt",
+            constraint=models.UniqueConstraint(
+                fields=("order", "idempotency_key"), name="payments_order_request_key_unique"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='paymentattempt',
-            constraint=models.UniqueConstraint(condition=models.Q(('provider_authority', ''), _negated=True), fields=('provider', 'provider_authority'), name='payments_provider_authority_unique'),
+            model_name="paymentattempt",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("provider_authority", ""), _negated=True),
+                fields=("provider", "provider_authority"),
+                name="payments_provider_authority_unique",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='paymentattempt',
-            constraint=models.CheckConstraint(condition=models.Q(('amount_toman__gte', 0)), name='payments_amount_toman_nonnegative'),
+            model_name="paymentattempt",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("amount_toman__gte", 0)),
+                name="payments_amount_toman_nonnegative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='paymentattempt',
-            constraint=models.CheckConstraint(condition=models.Q(('amount_rial', django.db.models.expressions.CombinedExpression(models.F('amount_toman'), '*', models.Value(10)))), name='payments_rial_toman_exact'),
+            model_name="paymentattempt",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    (
+                        "amount_rial",
+                        django.db.models.expressions.CombinedExpression(
+                            models.F("amount_toman"), "*", models.Value(10)
+                        ),
+                    )
+                ),
+                name="payments_rial_toman_exact",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='paymentattempt',
-            constraint=models.CheckConstraint(condition=models.Q(('currency_code', 'IRR')), name='payments_currency_irr'),
+            model_name="paymentattempt",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("currency_code", "IRR")), name="payments_currency_irr"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='paymentattempt',
-            constraint=models.CheckConstraint(condition=models.Q(('display_unit', 'تومان')), name='payments_display_unit_toman'),
+            model_name="paymentattempt",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("display_unit", "تومان")), name="payments_display_unit_toman"
+            ),
         ),
     ]
