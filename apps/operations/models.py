@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from uuid import uuid4
 
 from django.conf import settings
@@ -60,12 +61,12 @@ class AuditEvent(models.Model):
             ("verify_audit_chain", "Can verify the operational audit chain"),
         ]
 
-    def save(self, *args: object, **kwargs: object) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         if not self._state.adding:
             raise ValidationError("Audit events are append-only and cannot be updated.")
         super().save(*args, **kwargs)
 
-    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         raise ValidationError("Audit events are append-only and cannot be deleted.")
 
     def __str__(self) -> str:
@@ -106,7 +107,7 @@ class NotificationOutbox(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                condition=~models.Q(status=Status.SENT) | models.Q(sent_at__isnull=False),
+                condition=~models.Q(status="sent") | models.Q(sent_at__isnull=False),
                 name="ops_notify_sent_has_timestamp",
             ),
         ]
@@ -144,12 +145,12 @@ class NotificationDeliveryAttempt(models.Model):
             models.CheckConstraint(condition=models.Q(attempt_no__gt=0), name="ops_notify_attempt_positive"),
         ]
 
-    def save(self, *args: object, **kwargs: object) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         if not self._state.adding:
             raise ValidationError("Notification delivery attempts are append-only.")
         super().save(*args, **kwargs)
 
-    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         raise ValidationError("Notification delivery attempts are append-only.")
 
     def __str__(self) -> str:
