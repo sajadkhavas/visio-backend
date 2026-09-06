@@ -79,6 +79,10 @@ for origin in CSRF_TRUSTED_ORIGINS:
             "DJANGO_CSRF_TRUSTED_ORIGINS must contain explicit absolute HTTPS origins."
         )
 
+# Production topology requires the public TLS edge to be the only path to the
+# loopback-bound application server. Caddy overwrites X-Forwarded-Proto for
+# proxied requests, so Django can safely reconstruct the original HTTPS scheme.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
 if not SECURE_SSL_REDIRECT:
     raise ImproperlyConfigured("DJANGO_SECURE_SSL_REDIRECT must remain enabled in production.")
