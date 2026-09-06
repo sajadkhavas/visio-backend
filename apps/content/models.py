@@ -28,6 +28,7 @@ class ContentEntry(models.Model):
         GUIDE = "guide", "Guide"
         MAGAZINE = "magazine", "Magazine"
         POLICY = "policy", "Policy"
+        PAGE = "page", "Page"
 
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
@@ -125,3 +126,102 @@ class ContentEntry(models.Model):
         for value in fields:
             terms.extend(_flatten_text(value))
         return "\n".join(term.strip() for term in terms if term.strip())
+
+
+class SiteConfiguration(models.Model):
+    key = models.CharField(max_length=32, unique=True, default="default", editable=False)
+    business_name = models.CharField(max_length=180, blank=True)
+    legal_name = models.CharField(max_length=220, blank=True)
+    registration_number = models.CharField(max_length=80, blank=True)
+    tax_identity = models.CharField(max_length=80, blank=True)
+    support_email = models.EmailField(blank=True)
+    support_phone = models.CharField(max_length=40, blank=True)
+    address = models.TextField(blank=True)
+    business_hours = models.TextField(blank=True)
+    social_links = models.JSONField(default=list, blank=True)
+    trust_marks = models.JSONField(default=list, blank=True)
+    payment_providers = models.JSONField(default=list, blank=True)
+    footer_tagline = models.CharField(max_length=220, blank=True)
+    footer_description = models.CharField(max_length=400, blank=True)
+    default_seo_title = models.CharField(max_length=240, blank=True)
+    default_seo_description = models.CharField(max_length=320, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Site configuration"
+        verbose_name_plural = "Site configuration"
+
+    def __str__(self) -> str:
+        return "VISIO public site configuration"
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        for field_name in ("social_links", "trust_marks", "payment_providers"):
+            value = getattr(self, field_name)
+            if not isinstance(value, list):
+                errors[field_name] = "Value must be a JSON array."
+        if errors:
+            raise ValidationError(errors)
+
+
+class HomepageBlock(models.Model):
+    class BlockType(models.TextChoices):
+        HERO = "hero", "Hero"
+        CATEGORY = "category", "Category merchandising"
+        EDITORIAL = "editorial", "Editorial"
+        GUIDE = "guide", "Guide"
+        DETAIL = "detail", "Detail study"
+        FEATURED = "featured", "Featured collection"
+
+    key = models.SlugField(max_length=100, unique=True)
+    block_type = models.CharField(max_length=20, choices=BlockType.choices)
+    eyebrow = models.CharField(max_length=160, blank=True)
+    title = models.CharField(max_length=240)
+    body = models.TextField(blank=True)
+    image = models.FileField(upload_to="site/home/", blank=True)
+    image_alt = models.CharField(max_length=240, blank=True)
+    target_path = models.CharField(max_length=300, blank=True)
+    target_label = models.CharField(max_length=120, blank=True)
+    payload = models.JSONField(default=dict, blank=True)
+    is_enabled = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("sort_order", "id")
+        indexes = [
+            models.Index(fields=("is_enabled", "sort_order"), name="content_home_public_idx")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.block_type}:{self.key}"
+
+    def clean(self) -> None:
+        super().clean()
+        if not isinstance(self.payload, dict):
+            raise ValidationError({"payload": "Homepage payload must be a JSON object."})
+
+
+class ContactMessage(models.Model):
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        READ = "read", "Read"
+        RESOLVED = "resolved", "Resolved"
+        SPAM = "spam", "Spam"
+
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    name = models.CharField(max_length=180)
+    email = models.EmailField()
+    subject = models.CharField(max_length=240)
+    message = models.TextField(max_length=5000)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.NEW)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at", "id")
+        indexes = [models.Index(fields=("status", "created_at"), name="content_contact_status_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.created_at:%Y-%m-%d} · {self.subject}"
