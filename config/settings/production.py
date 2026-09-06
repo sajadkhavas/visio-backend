@@ -1,23 +1,36 @@
 import os
+from urllib.parse import urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *
 
 SECRET_KEY = required_env("DJANGO_SECRET_KEY")
-if len(SECRET_KEY) < 50:
-    raise ImproperlyConfigured("DJANGO_SECRET_KEY must contain at least 50 characters.")
+if len(SECRET_KEY) < 50 or len(set(SECRET_KEY)) < 5 or SECRET_KEY.startswith("django-insecure-"):
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be at least 50 characters, sufficiently diverse, and not insecure."
+    )
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must contain at least one host.")
+if any(host == "*" or "*" in host for host in ALLOWED_HOSTS):
+    raise ImproperlyConfigured("Wildcard DJANGO_ALLOWED_HOSTS entries are not allowed in production.")
 
+POSTGRES_SSLMODE = os.getenv("POSTGRES_SSLMODE", "require").strip().lower()
+if POSTGRES_SSLMODE in {"disable", "allow", "prefer"}:
+    raise ImproperlyConfigured(
+        "POSTGRES_SSLMODE must not permit plaintext or downgrade-capable database transport in production."
+    )
 DATABASES = {
     "default": postgres_database(
         require_credentials=True,
-        sslmode=os.getenv("POSTGRES_SSLMODE", "require"),
+        sslmode=POSTGRES_SSLMODE,
     )
 }
+
+if PAYMENT_PROVIDER_TIMEOUT_SECONDS <= 0 or PAYMENT_PROVIDER_TIMEOUT_SECONDS > 30:
+    raise ImproperlyConfigured("PAYMENT_PROVIDER_TIMEOUT_SECONDS must be within (0, 30].")
 
 if PAYMENTS_ENABLED:
     if PAYMENT_PROVIDER != "zarinpal":
@@ -28,6 +41,9 @@ if PAYMENTS_ENABLED:
         raise ImproperlyConfigured("PAYMENT_CALLBACK_URL must be an absolute HTTPS URL.")
     if ZARINPAL_SANDBOX:
         raise ImproperlyConfigured("ZARINPAL_SANDBOX cannot be enabled in production.")
+
+if EMAIL_TIMEOUT <= 0 or EMAIL_TIMEOUT > 30:
+    raise ImproperlyConfigured("EMAIL_TIMEOUT must be within (0, 30] seconds in production.")
 
 if NOTIFICATIONS_ENABLED:
     if NOTIFICATION_CHANNEL != "email":
@@ -53,10 +69,24 @@ if NOTIFICATIONS_ENABLED:
 
 DEBUG = False
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+for origin in CSRF_TRUSTED_ORIGINS:
+    parsed = urlparse(origin)
+    if parsed.scheme != "https" or not parsed.netloc or "*" in parsed.netloc:
+        raise ImproperlyConfigured(
+            "DJANGO_CSRF_TRUSTED_ORIGINS must contain explicit absolute HTTPS origins."
+        )
+
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
+if not SECURE_SSL_REDIRECT:
+    raise ImproperlyConfigured("DJANGO_SECURE_SSL_REDIRECT must remain enabled in production.")
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
+if SECURE_HSTS_SECONDS <= 0:
+    raise ImproperlyConfigured("DJANGO_SECURE_HSTS_SECONDS must be positive in production.")
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", False)
 SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
