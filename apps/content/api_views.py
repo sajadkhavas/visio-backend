@@ -2,14 +2,26 @@ from __future__ import annotations
 
 from django.db.models import Q, QuerySet
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 
-from .models import ContentEntry
+from .models import ContactMessage, ContentEntry, HomepageBlock, SiteConfiguration
 from .pagination import ContentPagination
-from .serializers import ContentEntrySerializer
+from .serializers import (
+    ContactMessageCreateSerializer,
+    ContentEntrySerializer,
+    HomepageBlockSerializer,
+    SiteConfigurationSerializer,
+)
 
 CONTENT_QUERY_PARAMETERS = {"kind", "q", "sort", "page", "page_size"}
 CONTENT_SORT_VALUES = {"default", "newest", "oldest", "title-asc", "title-desc"}
@@ -47,7 +59,7 @@ def validated_content_queryset(query_params: object) -> QuerySet[ContentEntry]:
     if kind:
         valid_kinds = {choice.value for choice in ContentEntry.Kind}
         if kind not in valid_kinds:
-            raise ValidationError({"kind": "Allowed values: guide, magazine, policy."})
+            raise ValidationError({"kind": "Allowed values: guide, magazine, policy, page."})
         queryset = queryset.filter(kind=kind)
 
     query = _validated_query(query_params.get("q"))  # type: ignore[attr-defined]
@@ -77,7 +89,7 @@ def validated_content_queryset(query_params: object) -> QuerySet[ContentEntry]:
 
 @extend_schema(
     parameters=[
-        OpenApiParameter("kind", str, enum=["guide", "magazine", "policy"]),
+        OpenApiParameter("kind", str, enum=["guide", "magazine", "policy", "page"]),
         OpenApiParameter("q", str, description="Backend-authoritative text search, max 120 chars."),
         OpenApiParameter(
             "sort",
@@ -107,3 +119,65 @@ class ContentDetailView(RetrieveAPIView):
 
     def get_queryset(self) -> QuerySet[ContentEntry]:
         return public_content_queryset().filter(kind=self.kwargs["kind"])
+
+
+class SiteConfigurationView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes: list[type] = []
+    throttle_classes: list[type] = []
+
+    @extend_schema(responses={200: SiteConfigurationSerializer})
+    def get(self, request: Request) -> Response:
+        config = SiteConfiguration.objects.filter(key="default").first()
+        if config is None:
+            return Response(
+                {
+                    "configured": False,
+                    "businessName": "",
+                    "legalName": "",
+                    "registrationNumber": "",
+                    "taxIdentity": "",
+                    "supportEmail": "",
+                    "supportPhone": "",
+                    "address": "",
+                    "businessHours": "",
+                    "socialLinks": [],
+                    "trustMarks": [],
+                    "paymentProviders": [],
+                    "footerTagline": "",
+                    "footerDescription": "",
+                    "defaultSeo": {"title": "", "description": ""},
+                    "updated_at": None,
+                }
+            )
+        return Response(SiteConfigurationSerializer(config).data)
+
+
+class HomepageView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes: list[type] = []
+    throttle_classes: list[type] = []
+
+    @extend_schema(responses={200: HomepageBlockSerializer(many=True)})
+    def get(self, request: Request) -> Response:
+        blocks = HomepageBlock.objects.filter(is_enabled=True).order_by("sort_order", "id")
+        serializer = HomepageBlockSerializer(blocks, many=True, context={"request": request})
+        return Response({"blocks": serializer.data})
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class ContactMessageCreateView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes: list[type] = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "contact_message"
+
+    @extend_schema(request=ContactMessageCreateSerializer, responses={201: dict})
+    def post(self, request: Request) -> Response:
+        serializer = ContactMessageCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message: ContactMessage = serializer.save()
+        return Response(
+            {"id": str(message.id), "status": "received"},
+            status=status.HTTP_201_CREATED,
+        )

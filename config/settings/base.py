@@ -173,6 +173,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "auth_register": "5/min",
         "auth_login": "10/min",
+        "contact_message": "5/hour",
     },
 }
 
