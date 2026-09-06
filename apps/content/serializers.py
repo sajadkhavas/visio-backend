@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.http import HttpRequest
 from rest_framework import serializers
 
 from .models import ContactMessage, ContentEntry, HomepageBlock, SiteConfiguration
@@ -138,7 +139,9 @@ class HomepageBlockSerializer(serializers.ModelSerializer):
             return ""
         request = self.context.get("request")
         url = block.image.url
-        return request.build_absolute_uri(url) if request is not None else url
+        if isinstance(request, HttpRequest):
+            return request.build_absolute_uri(url)
+        return url
 
 
 class ContactMessageCreateSerializer(serializers.ModelSerializer):
