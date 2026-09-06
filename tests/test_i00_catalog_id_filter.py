@@ -1,9 +1,9 @@
 from uuid import uuid4
 
 import pytest
-from rest_framework.exceptions import ValidationError
 
 from apps.catalog.api_views import parse_product_ids
+from rest_framework.exceptions import ValidationError
 
 
 def test_catalog_product_ids_accept_valid_uuid_csv_and_deduplicate() -> None:
