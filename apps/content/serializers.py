@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import cast
-
 from django.http import HttpRequest
 from rest_framework import serializers
 
@@ -140,9 +138,9 @@ class HomepageBlockSerializer(serializers.ModelSerializer):
         if not block.image:
             return ""
         request = self.context.get("request")
-        url = block.image.url
+        url = str(block.image.url)
         if isinstance(request, HttpRequest):
-            return cast(str, request.build_absolute_uri(url))
+            return request.build_absolute_uri(url)
         return url
 
 
