@@ -15,7 +15,9 @@ ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must contain at least one host.")
 if any(host == "*" or "*" in host for host in ALLOWED_HOSTS):
-    raise ImproperlyConfigured("Wildcard DJANGO_ALLOWED_HOSTS entries are not allowed in production.")
+    raise ImproperlyConfigured(
+        "Wildcard DJANGO_ALLOWED_HOSTS entries are not allowed in production."
+    )
 
 POSTGRES_SSLMODE = os.getenv("POSTGRES_SSLMODE", "require").strip().lower()
 if POSTGRES_SSLMODE in {"disable", "allow", "prefer"}:
