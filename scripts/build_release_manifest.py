@@ -31,12 +31,9 @@ def build_manifest() -> dict[str, object]:
         ["git", "ls-files", "-z"],
         cwd=REPOSITORY_ROOT,
     )
-    tracked_paths = sorted(
-        item.decode("utf-8") for item in tracked_raw.split(b"\0") if item
-    )
+    tracked_paths = sorted(item.decode("utf-8") for item in tracked_raw.split(b"\0") if item)
     files = {
-        relative_path: _sha256(REPOSITORY_ROOT / relative_path)
-        for relative_path in tracked_paths
+        relative_path: _sha256(REPOSITORY_ROOT / relative_path) for relative_path in tracked_paths
     }
     return {
         "schema": "visio-backend-release-manifest/v1",
