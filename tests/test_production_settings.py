@@ -17,7 +17,7 @@ def run_production_settings(
             "POSTGRES_PASSWORD": "visio_test_password",
             "POSTGRES_HOST": "127.0.0.1",
             "POSTGRES_PORT": "5432",
-            "POSTGRES_SSLMODE": "disable",
+            "POSTGRES_SSLMODE": "require",
         }
     )
     for name, value in overrides.items():
@@ -63,11 +63,63 @@ def test_production_settings_fail_without_allowed_hosts() -> None:
     assert "DJANGO_ALLOWED_HOSTS" in result.stderr
 
 
+def test_production_settings_reject_wildcard_allowed_hosts() -> None:
+    result = run_production_settings(
+        {
+            "DJANGO_SECRET_KEY": VALID_SECRET,
+            "DJANGO_ALLOWED_HOSTS": "*",
+        }
+    )
+
+    assert result.returncode != 0
+    assert "Wildcard DJANGO_ALLOWED_HOSTS" in result.stderr
+
+
+def test_production_settings_reject_plaintext_database_transport() -> None:
+    result = run_production_settings(
+        {
+            "DJANGO_SECRET_KEY": VALID_SECRET,
+            "DJANGO_ALLOWED_HOSTS": "api.example.invalid",
+            "POSTGRES_SSLMODE": "disable",
+        }
+    )
+
+    assert result.returncode != 0
+    assert "POSTGRES_SSLMODE" in result.stderr
+
+
+def test_production_settings_reject_insecure_csrf_origin() -> None:
+    result = run_production_settings(
+        {
+            "DJANGO_SECRET_KEY": VALID_SECRET,
+            "DJANGO_ALLOWED_HOSTS": "api.example.invalid",
+            "DJANGO_CSRF_TRUSTED_ORIGINS": "http://api.example.invalid",
+        }
+    )
+
+    assert result.returncode != 0
+    assert "DJANGO_CSRF_TRUSTED_ORIGINS" in result.stderr
+
+
+def test_production_settings_reject_disabled_ssl_redirect() -> None:
+    result = run_production_settings(
+        {
+            "DJANGO_SECRET_KEY": VALID_SECRET,
+            "DJANGO_ALLOWED_HOSTS": "api.example.invalid",
+            "DJANGO_SECURE_SSL_REDIRECT": "0",
+        }
+    )
+
+    assert result.returncode != 0
+    assert "DJANGO_SECURE_SSL_REDIRECT" in result.stderr
+
+
 def test_production_settings_boot_with_complete_nonsecret_test_environment() -> None:
     result = run_production_settings(
         {
             "DJANGO_SECRET_KEY": VALID_SECRET,
             "DJANGO_ALLOWED_HOSTS": "api.example.invalid",
+            "DJANGO_CSRF_TRUSTED_ORIGINS": "https://api.example.invalid",
         }
     )
 
