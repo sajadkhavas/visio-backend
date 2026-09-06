@@ -67,6 +67,14 @@ jobs:
           uv lock --check
           uv sync --frozen --all-groups
 
+      - name: Audit installed Python dependencies
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check "pip-audit==2.10.1"
+          VENV_SITE="$(uv run python -c 'import site; print(site.getsitepackages()[0])')"
+          python -m pip_audit --strict --skip-editable --path "$VENV_SITE" --progress-spinner off
+          uv pip check
+
       - name: Verify immutable GitHub Action pins
         run: uv run python scripts/check_action_pins.py
 
@@ -91,11 +99,71 @@ jobs:
       - name: Migrate from zero
         run: uv run python manage.py migrate --noinput
 
+      - name: Verify cross-domain business integrity
+        run: uv run python manage.py verify_business_integrity
+
       - name: Test suite on PostgreSQL
         run: uv run pytest
 
       - name: Validate OpenAPI generation
         run: uv run python manage.py spectacular --file /tmp/visio-openapi.yaml --validate
+
+      - name: Rehearse PostgreSQL backup and disposable restore
+        run: |
+          set -Eeuo pipefail
+          backup_dir=/tmp/visio-b10-backup
+          restore_db="visio_restore_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$backup_dir"
+          mkdir -m 700 "$backup_dir"
+
+          cleanup() {
+            docker run --rm --network host \
+              -e PGPASSWORD="$POSTGRES_PASSWORD" \
+              postgres:16.15-bookworm \
+              dropdb --if-exists \
+              --host=127.0.0.1 \
+              --port="$POSTGRES_PORT" \
+              --username="$POSTGRES_USER" \
+              "$restore_db" || true
+          }
+          trap cleanup EXIT
+
+          docker run --rm --network host \
+            -e POSTGRES_DB \
+            -e POSTGRES_USER \
+            -e POSTGRES_PASSWORD \
+            -e POSTGRES_HOST \
+            -e POSTGRES_PORT \
+            -e VISIO_BACKUP_PATH=/backup/visio.dump \
+            -v "$PWD:/workspace:ro" \
+            -v "$backup_dir:/backup" \
+            postgres:16.15-bookworm \
+            bash /workspace/scripts/backup_postgres.sh
+
+          docker run --rm --network host \
+            -e PGPASSWORD="$POSTGRES_PASSWORD" \
+            postgres:16.15-bookworm \
+            createdb \
+            --host=127.0.0.1 \
+            --port="$POSTGRES_PORT" \
+            --username="$POSTGRES_USER" \
+            "$restore_db"
+
+          docker run --rm --network host \
+            -e POSTGRES_DB \
+            -e POSTGRES_USER \
+            -e POSTGRES_PASSWORD \
+            -e POSTGRES_HOST \
+            -e POSTGRES_PORT \
+            -e VISIO_BACKUP_PATH=/backup/visio.dump \
+            -e VISIO_RESTORE_DATABASE="$restore_db" \
+            -v "$PWD:/workspace:ro" \
+            -v "$backup_dir:/backup:ro" \
+            postgres:16.15-bookworm \
+            bash /workspace/scripts/restore_postgres.sh
+
+          POSTGRES_DB="$restore_db" uv run python manage.py migrate --check
+          POSTGRES_DB="$restore_db" uv run python manage.py verify_business_integrity
 
       - name: Production deployment checks with explicit HSTS deferral
         env:
@@ -107,8 +175,16 @@ jobs:
           POSTGRES_PASSWORD: visio_ci_password
           POSTGRES_HOST: 127.0.0.1
           POSTGRES_PORT: "5432"
-          POSTGRES_SSLMODE: disable
+          POSTGRES_SSLMODE: require
         run: uv run python scripts/check_deployment.py
+
+      - name: Verify deterministic release manifest
+        run: |
+          set -Eeuo pipefail
+          uv run python scripts/build_release_manifest.py --output /tmp/visio-release-a.json
+          uv run python scripts/build_release_manifest.py --output /tmp/visio-release-b.json
+          cmp /tmp/visio-release-a.json /tmp/visio-release-b.json
+          sha256sum /tmp/visio-release-a.json
 
       - name: Python bytecode compilation
         run: uv run python -m compileall -q apps config tests scripts
