@@ -22,7 +22,8 @@ if any(host == "*" or "*" in host for host in ALLOWED_HOSTS):
 POSTGRES_SSLMODE = os.getenv("POSTGRES_SSLMODE", "require").strip().lower()
 if POSTGRES_SSLMODE in {"disable", "allow", "prefer"}:
     raise ImproperlyConfigured(
-        "POSTGRES_SSLMODE must not permit plaintext or downgrade-capable database transport in production."
+        "POSTGRES_SSLMODE must not permit plaintext or downgrade-capable "
+        "database transport in production."
     )
 DATABASES = {
     "default": postgres_database(
