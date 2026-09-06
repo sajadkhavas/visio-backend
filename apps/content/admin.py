@@ -60,20 +60,48 @@ class ContentEntryAdmin(admin.ModelAdmin):
 class SiteConfigurationAdmin(admin.ModelAdmin):
     readonly_fields = ("key", "updated_at")
     fieldsets = (
-        ("Identity", {"fields": ("business_name", "legal_name", "registration_number", "tax_identity")}),
-        ("Contact", {"fields": ("support_email", "support_phone", "address", "business_hours", "social_links")}),
+        (
+            "Identity",
+            {"fields": ("business_name", "legal_name", "registration_number", "tax_identity")},
+        ),
+        (
+            "Contact",
+            {
+                "fields": (
+                    "support_email",
+                    "support_phone",
+                    "address",
+                    "business_hours",
+                    "social_links",
+                )
+            },
+        ),
         ("Trust", {"fields": ("trust_marks", "payment_providers")}),
-        ("Footer / SEO", {"fields": ("footer_tagline", "footer_description", "default_seo_title", "default_seo_description")}),
+        (
+            "Footer / SEO",
+            {
+                "fields": (
+                    "footer_tagline",
+                    "footer_description",
+                    "default_seo_title",
+                    "default_seo_description",
+                )
+            },
+        ),
         ("System", {"fields": ("key", "updated_at")}),
     )
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return super().has_add_permission(request) and not SiteConfiguration.objects.exists()
 
-    def has_delete_permission(self, request: HttpRequest, obj: SiteConfiguration | None = None) -> bool:
+    def has_delete_permission(
+        self, request: HttpRequest, obj: SiteConfiguration | None = None
+    ) -> bool:
         return False
 
-    def save_model(self, request: HttpRequest, obj: SiteConfiguration, form: Any, change: bool) -> None:
+    def save_model(
+        self, request: HttpRequest, obj: SiteConfiguration, form: Any, change: bool
+    ) -> None:
         actor = _require_staff_user(request)
         with transaction.atomic():
             obj.full_clean()
@@ -137,12 +165,18 @@ class ContactMessageAdmin(admin.ModelAdmin):
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
 
-    def has_delete_permission(self, request: HttpRequest, obj: ContactMessage | None = None) -> bool:
+    def has_delete_permission(
+        self, request: HttpRequest, obj: ContactMessage | None = None
+    ) -> bool:
         return False
 
-    def save_model(self, request: HttpRequest, obj: ContactMessage, form: Any, change: bool) -> None:
+    def save_model(
+        self, request: HttpRequest, obj: ContactMessage, form: Any, change: bool
+    ) -> None:
         if not change:
-            raise PermissionDenied("Contact messages can only be created through the public intake API.")
+            raise PermissionDenied(
+                "Contact messages can only be created through the public intake API."
+            )
         actor = _require_staff_user(request)
         before = ContactMessage.objects.only("status").get(pk=obj.pk).status
         with transaction.atomic():
