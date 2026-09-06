@@ -2,7 +2,7 @@
 
 Updated: 2026-09-06
 
-This is the backend resume roadmap. Authoritative master tracker: frontend repository Issue #39.
+This is the backend resume roadmap. Authoritative cross-repository master tracker: frontend repository Issue #39.
 
 ## Accepted history
 
@@ -16,36 +16,65 @@ This is the backend resume roadmap. Authoritative master tracker: frontend repos
 - B06 — Orders & Order Lifecycle: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
 - B07 — Payment & Reconciliation: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN
 - B08 — Content, Search & Public Data APIs: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN / CLOSED
-- B09 — Admin Operations, Notifications & Audit: APPLICATION COMPLETED / MERGED / FROZEN / POST-MERGE GREEN; FINAL REGISTRY SYNC IN PROGRESS
+- B09 — Admin Operations, Notifications & Audit: COMPLETED / MERGED / FROZEN / REGISTRY-SYNCED / POST-MERGE GREEN / CLOSED
+- B10 — Backend Security, Reliability & Release Gate: APPLICATION COMPLETED / MERGED / FROZEN / POST-MERGE GREEN; FINAL REGISTRY SYNC IN PROGRESS
 
-## B09 accepted application evidence
+## B09 accepted closure
 
-- START_SHA: `5e4b71facf5393187b7c15e829fee86395866adb`
-- implementation branch: `phase/visio-b09-admin-notifications-audit`
-- implementation END_SHA: `561922cb4eb80b9ee7edc68842b6ba92a22cf9f9`
-- closure/freeze head: `6c9e7bd0c84754f2251632d285b4b50e5d252a41`
-- freeze ref: `freeze/visio-backend-b09-20260906`
-- backend application PR #18: MERGED with expected head SHA
-- accepted B09 application merge: `48549546d76b99087d0d01dd13522ba65a277209`
-- implementation Gate #364 / `33990690444` — PASS
-- closure exact-head Gate #367 / `33990836720` — PASS
-- application PR exact-head Gate #368 / `33990915523` — PASS
-- application post-merge Gate #369 / `33990998542` — PASS
+- exact B09 START_SHA: `5e4b71facf5393187b7c15e829fee86395866adb`
+- application merge: `48549546d76b99087d0d01dd13522ba65a277209`
+- registry PR #19: MERGED with expected head SHA
+- final accepted B09 backend `main` / exact B10 START_SHA: `64e2e9580be802977844225c3cbc260520dcb488`
+- final registry post-merge Gate #371 / run `33991183860`: PASS
+
+## B10 accepted application evidence
+
+- exact START_SHA: `64e2e9580be802977844225c3cbc260520dcb488`
+- implementation branch: `phase/visio-b10-security-reliability-release-gate`
+- implementation END_SHA: `f1f3d35796aad385372cb3316daad3c2dbf04fb9`
+- closure/freeze head: `765aa81adf59b3e3abeaa8b5bacf92425dba067e`
+- freeze ref: `freeze/visio-backend-b10-20260906`
+- application PR #20: MERGED with expected head SHA
+- accepted B10 application merge: `71c2aea625d2033cb20cd2943b3dfe70e7a0953c`
+- implementation Gate #388 / run `34034532159`: PASS
+- closure exact-head Gate #393 / run `34034690452`: PASS
+- application PR exact-head Gate #394 / run `34034848101`: PASS
+- application post-merge Gate #395 / run `34034931961`: PASS
 - unresolved review threads: 0
-- strict mypy: PASS / 118 source files
-- migration drift: 0
-- migrate-from-zero PostgreSQL 16.15: PASS
-- full PostgreSQL suite: 106/106 PASS
-- B09 operations suite: 10/10 PASS
-- OpenAPI / Ruff / Django / production deployment / secret/action-pin / bytecode gates: PASS
+- Python 3.13.15 / Django 5.2.17 / PostgreSQL 16.15
+- strict mypy: PASS / 121 source files
+- full PostgreSQL suite: 116/116 PASS
+- B10 security/reliability suite: 6/6 PASS
+- dependency audit: PASS / no known vulnerabilities across 30 installed packages
+- migration drift: 0 / migrate-from-zero PostgreSQL 16.15: PASS
+- cross-domain business-integrity verification: PASS
+- backup + checksum + disposable restore + restored-integrity rehearsal: PASS
+- OpenAPI / Ruff / Django / production deployment / immutable action pins / secret sanity / deterministic release manifest / Python bytecode gates: PASS
 
-B09 delivers deterministic staff roles/permissions, service-mediated Admin operations, append-only tamper-evident operational audit evidence, durable transactional notification outbox/delivery attempts, fail-closed production email configuration and a permission-gated staff operations summary while preserving B01–B08 domain authority. Payment state remains read-only to staff CRUD, order transitions remain B06-owned, commerce truth remains B03-owned and notification delivery failure cannot rewrite financial/order truth.
+B10 delivers fail-closed production configuration checks, session/CSRF/login-abuse verification, structured privacy-bounded request observability, a permanent dependency vulnerability audit, cross-domain business-integrity verification, checksum-bearing PostgreSQL backup/restore tooling, executable disposable restore evidence and a deterministic release manifest. HSTS includeSubDomains/preload remains explicitly deferred to R00/S00 until whole-domain TLS evidence exists. No speculative distributed infrastructure was added.
+
+### Administrative no-op cleanup after application merge
+
+During registry preparation an accidental empty file was created and immediately deleted on backend `main`. The resulting cleanup head is `3a3f660e31c68577e865f6f74985d4b773812284`.
+
+- compare `71c2aea625d2033cb20cd2943b3dfe70e7a0953c...3a3f660e31c68577e865f6f74985d4b773812284`: `files: []`
+- both commits resolve to the same application tree: `3e05c0a91409cc448436ff60309e93cb4eaf80ec`
+- cleanup exact-head Gate #397 / run `34036798602`: PASS
+
+This pair of no-op commits changes no tracked runtime, migration, test, configuration or documentation content and is not counted as B10 implementation evidence. The B10 registry branch is intentionally based on the current green `main` head so history is not rewritten.
 
 ## Current transition
 
-B10 — Backend Security, Reliability & Release Gate — frontend Issue #58 is next, but its exact START_SHA is **not** the B09 application merge above. This docs-only registry branch intentionally follows accepted application merge `48549546d76b99087d0d01dd13522ba65a277209` and post-merge Gate #369.
+This docs-only branch `docs/visio-b10-closure-i00-transition-20260906` records B10 application acceptance and transitions project tracking toward I00. It contains no runtime or migration behavior change.
 
-The exact B10 START_SHA is the resulting backend `main` SHA only after this registry PR is exact-head green, has zero blocking review threads, merges with its expected head SHA and the resulting backend `main` post-merge Backend Quality Gate passes.
+The exact I00 backend START_SHA is **not** the B10 implementation END, closure/freeze SHA, application merge SHA, cleanup SHA or registry branch head. It is only the resulting backend `main` SHA after this registry PR:
+
+1. passes its exact-head Backend Quality Gate;
+2. has zero unresolved blocking review threads;
+3. merges with its expected head SHA; and
+4. the resulting backend `main` passes its final post-registry Backend Quality Gate.
+
+Only then may frontend Issue #58 close and Issue #59/Master #39 register the exact I00 backend START_SHA.
 
 ## Mandatory execution rules
 
@@ -67,19 +96,11 @@ The exact B10 START_SHA is the resulting backend `main` SHA only after this regi
 
 # Remaining execution order
 
-## B10 — Backend Security, Reliability & Release Gate — Issue #58
-
-Status: **NEXT AFTER B09 REGISTRY ACCEPTANCE**
-
-Owns final backend hardening, dependency/security review, auth/session/CSRF/rate-limit review, fail-closed production settings, health/readiness and failure modes, structured logging/observability, backup/restore/recovery, critical query/performance review and release runbook/freeze.
-
-B10 must preserve B09 role/audit/outbox contracts and all B01–B08 domain invariants. Deployment/recovery claims require executable evidence; infrastructure is added only when current requirements demonstrate a need.
-
 ## I00 — Full Frontend ↔ Backend Integration — Issue #59
 
-Status: **REGISTERED / WAITING FOR B10**
+Status: **REGISTERED / WAITING FOR FINAL B10 REGISTRY ACCEPTANCE**
 
-Owns integration of the F19 frontend with accepted backend truth across auth, account, catalog, price/inventory, cart/wishlist, checkout/shipping, orders, payment and content/search. It must remove production authority from frontend fixtures/localStorage/client totals.
+Owns integration of the frozen F19 frontend with accepted backend truth across auth, account, catalog, price/inventory, cart/wishlist, checkout/shipping, orders, payment and content/search. It must remove production authority from frontend fixtures/localStorage/client totals and verify real API failure/recovery behavior.
 
 ## R00 — Pre-Production Release Rehearsal — Issue #60
 
@@ -105,4 +126,4 @@ Owns final production-authoritative acceptance, operations/security review, depl
 
 ## Resume instruction
 
-Do not redo F19 or B00–B09 application work. Complete this B09 docs-only registry acceptance first. Then use the resulting post-registry-green backend `main` SHA as the exact B10 START_SHA, register it in Issue #58/Master #39, create the dedicated B10 branch from that exact SHA and resume B10.
+Do not redo F19 or B00–B10 application work. Complete this B10 docs-only registry acceptance. After its final post-registry backend `main` Gate passes, register that exact backend SHA together with the accepted F19 frontend freeze in Issue #59 and Master #39, then begin I00 on dedicated integration branches only.
