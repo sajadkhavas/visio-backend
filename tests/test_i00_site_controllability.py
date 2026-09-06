@@ -3,12 +3,11 @@ from __future__ import annotations
 from uuid import UUID
 
 import pytest
+from apps.content.models import ContactMessage, ContentEntry, HomepageBlock, SiteConfiguration
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
 from django.test import Client
 from django.utils import timezone
-
-from apps.content.models import ContactMessage, ContentEntry, HomepageBlock, SiteConfiguration
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
