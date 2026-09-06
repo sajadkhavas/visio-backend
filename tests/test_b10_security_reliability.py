@@ -6,11 +6,10 @@ import re
 from io import StringIO
 
 import pytest
+from apps.system.observability import JsonLogFormatter
 from django.core.cache import cache
 from django.core.management import call_command
 from django.test import Client, override_settings
-
-from apps.system.observability import JsonLogFormatter
 
 pytestmark = pytest.mark.django_db
 
