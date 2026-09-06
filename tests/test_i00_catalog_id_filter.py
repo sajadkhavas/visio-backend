@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 import pytest
-
 from apps.catalog.api_views import parse_product_ids
 from rest_framework.exceptions import ValidationError
 
