@@ -9,7 +9,7 @@ import pytest
 from apps.system.observability import JsonLogFormatter
 from django.core.cache import cache
 from django.core.management import call_command
-from django.test import Client, override_settings
+from django.test import Client
 
 pytestmark = pytest.mark.django_db
 
@@ -74,21 +74,7 @@ def test_login_rejects_missing_csrf_token() -> None:
     assert response["Content-Type"].startswith("application/problem+json")
 
 
-@override_settings(
-    REST_FRAMEWORK={
-        "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-        "EXCEPTION_HANDLER": "apps.system.exceptions.problem_details_exception_handler",
-        "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
-        "DEFAULT_AUTHENTICATION_CLASSES": [
-            "rest_framework.authentication.SessionAuthentication",
-        ],
-        "DEFAULT_THROTTLE_RATES": {
-            "auth_register": "5/min",
-            "auth_login": "2/min",
-        },
-    }
-)
-def test_login_rate_limit_fails_closed_after_scope_budget() -> None:
+def test_login_rate_limit_fails_closed_after_production_scope_budget() -> None:
     cache.clear()
     client = Client(enforce_csrf_checks=True)
     csrf_response = client.get(CSRF_PATH)
@@ -96,7 +82,7 @@ def test_login_rate_limit_fails_closed_after_scope_budget() -> None:
     csrf_token = csrf_response.json()["csrf_token"]
 
     statuses = []
-    for _ in range(3):
+    for _ in range(11):
         response = client.post(
             LOGIN_PATH,
             data={"email": "rate-limit@example.invalid", "password": "invalid-password"},
@@ -105,7 +91,8 @@ def test_login_rate_limit_fails_closed_after_scope_budget() -> None:
         )
         statuses.append(response.status_code)
 
-    assert statuses == [400, 400, 429]
+    assert statuses[:10] == [400] * 10
+    assert statuses[10] == 429
     cache.clear()
 
 
