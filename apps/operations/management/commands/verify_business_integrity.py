@@ -68,6 +68,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                "Business integrity verification passed: audit/payment/order/reconciliation truth is consistent."
+                "Business integrity verification passed: audit/payment/order/reconciliation "
+                "truth is consistent."
             )
         )
