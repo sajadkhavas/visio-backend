@@ -1,5 +1,6 @@
 from functools import reduce
 from operator import or_
+from uuid import UUID
 
 from django.db.models import Prefetch, Q, QuerySet
 from django.utils import timezone
@@ -30,6 +31,7 @@ PRODUCT_QUERY_PARAMETERS = {
     "material",
     "shape",
     "color",
+    "ids",
     "q",
     "sort",
     "page",
@@ -96,6 +98,20 @@ def parse_csv(value: str | None, *, field: str) -> list[str]:
     return items
 
 
+def parse_product_ids(value: str | None) -> list[UUID]:
+    if value is None:
+        return []
+    raw_ids = list(dict.fromkeys(item.strip() for item in value.split(",") if item.strip()))
+    if not raw_ids:
+        raise ValidationError({"ids": "At least one non-empty product id is required."})
+    if len(raw_ids) > 48:
+        raise ValidationError({"ids": "At most 48 product ids may be supplied."})
+    try:
+        return [UUID(value) for value in raw_ids]
+    except ValueError as exc:
+        raise ValidationError({"ids": "Every product id must be a valid UUID."}) from exc
+
+
 def reject_unknown_parameters(query_params: object) -> None:
     keys = set(query_params.keys())  # type: ignore[attr-defined]
     unknown = sorted(keys - PRODUCT_QUERY_PARAMETERS)
@@ -106,6 +122,10 @@ def reject_unknown_parameters(query_params: object) -> None:
 def validated_catalog_queryset(query_params: object) -> QuerySet[Product]:
     reject_unknown_parameters(query_params)
     queryset = public_product_queryset()
+
+    product_ids = parse_product_ids(query_params.get("ids"))  # type: ignore[attr-defined]
+    if product_ids:
+        queryset = queryset.filter(id__in=product_ids)
 
     brands = parse_csv(query_params.get("brand"), field="brand")  # type: ignore[attr-defined]
     if brands:
@@ -200,6 +220,7 @@ class CategoryListView(ListAPIView):
         OpenApiParameter("material", str, description="Comma-separated material values."),
         OpenApiParameter("shape", str, description="Exact shape value."),
         OpenApiParameter("color", str, description="Exact color value."),
+        OpenApiParameter("ids", str, description="Comma-separated product UUIDs; maximum 48."),
         OpenApiParameter(
             "q",
             str,
