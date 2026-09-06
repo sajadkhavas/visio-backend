@@ -7,6 +7,7 @@ VALID_SECRET = "production-test-7Gv!F1q@9xZ#2pL$8mN%5rT&3yU*6kW-4cE_1sQ+0aB=9dH"
 
 def run_production_settings(
     overrides: dict[str, str | None],
+    expression: str = "settings.DEBUG",
 ) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env.update(
@@ -30,7 +31,7 @@ def run_production_settings(
         [
             sys.executable,
             "-c",
-            "from django.conf import settings; print(settings.DEBUG)",
+            f"from django.conf import settings; print({expression})",
         ],
         check=False,
         capture_output=True,
@@ -112,6 +113,20 @@ def test_production_settings_reject_disabled_ssl_redirect() -> None:
 
     assert result.returncode != 0
     assert "DJANGO_SECURE_SSL_REDIRECT" in result.stderr
+
+
+def test_production_settings_trust_caddy_https_proxy_header() -> None:
+    result = run_production_settings(
+        {
+            "DJANGO_SECRET_KEY": VALID_SECRET,
+            "DJANGO_ALLOWED_HOSTS": "api.example.invalid",
+            "DJANGO_CSRF_TRUSTED_ORIGINS": "https://api.example.invalid",
+        },
+        expression="settings.SECURE_PROXY_SSL_HEADER",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "('HTTP_X_FORWARDED_PROTO', 'https')"
 
 
 def test_production_settings_boot_with_complete_nonsecret_test_environment() -> None:
