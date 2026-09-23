@@ -373,3 +373,53 @@ def test_reusable_staff_permission_helper_requires_active_staff_and_all_permissi
     actor.is_active = False
     actor.save(update_fields=("is_active",))
     assert staff_has_permissions(actor) is False
+
+
+def test_role_matrix_reconciles_only_proven_merchant_permission_gaps() -> None:
+    roles = {role.name: set(role.permissions) for role in ROLE_MATRIX}
+
+    assert set(roles) == {
+        "VISIO Catalog Manager",
+        "VISIO Content Editor",
+        "VISIO Fulfillment Operator",
+        "VISIO Finance Reviewer",
+        "VISIO Customer Support",
+        "VISIO Operations Admin",
+    }
+
+    assert {
+        ("content", "view_homepageblock"),
+        ("content", "add_homepageblock"),
+        ("content", "change_homepageblock"),
+    }.issubset(roles["VISIO Content Editor"])
+    assert ("content", "change_siteconfiguration") not in roles["VISIO Content Editor"]
+
+    assert {
+        ("content", "view_contactmessage"),
+        ("content", "change_contactmessage"),
+    }.issubset(roles["VISIO Customer Support"])
+    assert ("content", "add_contactmessage") not in roles["VISIO Customer Support"]
+
+    operations = roles["VISIO Operations Admin"]
+    assert {
+        ("content", "view_siteconfiguration"),
+        ("content", "add_siteconfiguration"),
+        ("content", "change_siteconfiguration"),
+        ("content", "view_homepageblock"),
+        ("content", "add_homepageblock"),
+        ("content", "change_homepageblock"),
+        ("content", "view_contactmessage"),
+        ("content", "change_contactmessage"),
+        ("checkout", "view_shippingzone"),
+        ("checkout", "add_shippingzone"),
+        ("checkout", "change_shippingzone"),
+        ("checkout", "view_shippingmethod"),
+        ("checkout", "add_shippingmethod"),
+        ("checkout", "change_shippingmethod"),
+        ("checkout", "view_checkouttaxpolicy"),
+        ("checkout", "add_checkouttaxpolicy"),
+        ("checkout", "change_checkouttaxpolicy"),
+    }.issubset(operations)
+
+    for role_permissions in roles.values():
+        assert not any(codename.startswith("delete_") for _app, codename in role_permissions)

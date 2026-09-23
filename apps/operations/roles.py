@@ -39,6 +39,24 @@ CATALOG_EDITOR_PERMISSIONS = tuple(
     for permission in _model_permissions("catalog", model, ("view", "add", "change"))
 )
 
+CONTENT_ENTRY_EDITOR_PERMISSIONS = _model_permissions(
+    "content", "contententry", ("view", "add", "change")
+)
+HOMEPAGE_EDITOR_PERMISSIONS = _model_permissions(
+    "content", "homepageblock", ("view", "add", "change")
+)
+CONTACT_WORKFLOW_PERMISSIONS = _model_permissions(
+    "content", "contactmessage", ("view", "change")
+)
+SITE_CONFIGURATION_PERMISSIONS = _model_permissions(
+    "content", "siteconfiguration", ("view", "add", "change")
+)
+CHECKOUT_CONFIGURATION_PERMISSIONS = tuple(
+    permission
+    for model in ("shippingzone", "shippingmethod", "checkouttaxpolicy")
+    for permission in _model_permissions("checkout", model, ("view", "add", "change"))
+)
+
 ROLE_MATRIX: tuple[StaffRole, ...] = (
     StaffRole(
         name="VISIO Catalog Manager",
@@ -51,7 +69,10 @@ ROLE_MATRIX: tuple[StaffRole, ...] = (
     ),
     StaffRole(
         name="VISIO Content Editor",
-        permissions=_model_permissions("content", "contententry", ("view", "add", "change")),
+        permissions=(
+            *CONTENT_ENTRY_EDITOR_PERMISSIONS,
+            *HOMEPAGE_EDITOR_PERMISSIONS,
+        ),
     ),
     StaffRole(
         name="VISIO Fulfillment Operator",
@@ -83,6 +104,7 @@ ROLE_MATRIX: tuple[StaffRole, ...] = (
             *_model_permissions("orders", "order", ("view",)),
             *_model_permissions("orders", "orderline", ("view",)),
             *_model_permissions("payments", "paymentattempt", ("view",)),
+            *CONTACT_WORKFLOW_PERMISSIONS,
         ),
     ),
     StaffRole(
@@ -92,7 +114,11 @@ ROLE_MATRIX: tuple[StaffRole, ...] = (
             *_model_permissions("commerce", "variantprice", ("view", "add", "change")),
             *_model_permissions("commerce", "variantinventory", ("view", "add", "change")),
             *_model_permissions("commerce", "inventoryreservation", ("view",)),
-            *_model_permissions("content", "contententry", ("view", "add", "change")),
+            *CONTENT_ENTRY_EDITOR_PERMISSIONS,
+            *HOMEPAGE_EDITOR_PERMISSIONS,
+            *SITE_CONFIGURATION_PERMISSIONS,
+            *CONTACT_WORKFLOW_PERMISSIONS,
+            *CHECKOUT_CONFIGURATION_PERMISSIONS,
             *_model_permissions("orders", "order", ("view", "change")),
             *_model_permissions("orders", "orderline", ("view",)),
             *_model_permissions("payments", "paymentattempt", ("view",)),
