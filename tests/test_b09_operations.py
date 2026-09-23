@@ -327,3 +327,27 @@ def test_non_superuser_admin_cannot_escalate_role_fields() -> None:
 
     readonly = set(model_admin.get_readonly_fields(request, target))
     assert {"is_staff", "is_superuser", "groups", "user_permissions"}.issubset(readonly)
+
+
+def test_staff_me_requires_staff_and_exposes_existing_roles_and_permissions() -> None:
+    normal = User.objects.create_user(
+        username="staff-me-normal@example.com",
+        email="staff-me-normal@example.com",
+        password="Correct-Horse-Battery-55",
+    )
+    assert authenticated_client(normal).get("/api/v1/staff/me/").status_code == 403
+
+    sync_staff_roles()
+    staff = staff_user("staff-me-catalog@example.com")
+    staff.groups.add(Group.objects.get(name="VISIO Catalog Manager"))
+
+    response = authenticated_client(staff).get("/api/v1/staff/me/")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["email"] == staff.email
+    assert payload["isStaff"] is True
+    assert payload["isSuperuser"] is False
+    assert payload["groups"] == ["VISIO Catalog Manager"]
+    assert "catalog.view_product" in payload["permissions"]
+    assert "commerce.change_variantprice" in payload["permissions"]
