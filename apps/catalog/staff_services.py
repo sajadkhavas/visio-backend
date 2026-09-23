@@ -1,17 +1,12 @@
 from __future__ import annotations
 
-from typing import TypeVar
-
 from django.db import models, transaction
 
 from apps.accounts.models import User
 from apps.operations.audit import append_audit_event
 from apps.operations.permissions import require_staff_permission
 
-ModelT = TypeVar("ModelT", bound=models.Model)
-
-
-def save_catalog_object_as_staff(
+def save_catalog_object_as_staff[ModelT: models.Model](
     actor: User,
     obj: ModelT,
     *,
