@@ -21,7 +21,7 @@ def _staff_actor(request: HttpRequest) -> User:
     return actor
 
 
-class NoDeleteConfigurationAdmin(admin.ModelAdmin):
+class NoDeleteConfigurationAdmin(admin.ModelAdmin[Any]):
     def has_delete_permission(self, request: HttpRequest, obj: object | None = None) -> bool:
         return False
 
