@@ -105,6 +105,7 @@ module = [
   "apps.catalog.admin",
   "apps.content.admin",
   "apps.commerce.admin",
+  "apps.checkout.admin",
   "apps.orders.admin",
   "apps.payments.admin",
   "apps.operations.admin",
