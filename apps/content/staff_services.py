@@ -28,10 +28,7 @@ def save_content_entry_as_staff(
         before_status = None
         if change and entry.pk:
             before_status = (
-                ContentEntry.objects.select_for_update()
-                .only("status")
-                .get(pk=entry.pk)
-                .status
+                ContentEntry.objects.select_for_update().only("status").get(pk=entry.pk).status
             )
         entry.full_clean()
         entry.save()
