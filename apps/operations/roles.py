@@ -45,9 +45,7 @@ CONTENT_ENTRY_EDITOR_PERMISSIONS = _model_permissions(
 HOMEPAGE_EDITOR_PERMISSIONS = _model_permissions(
     "content", "homepageblock", ("view", "add", "change")
 )
-CONTACT_WORKFLOW_PERMISSIONS = _model_permissions(
-    "content", "contactmessage", ("view", "change")
-)
+CONTACT_WORKFLOW_PERMISSIONS = _model_permissions("content", "contactmessage", ("view", "change"))
 SITE_CONFIGURATION_PERMISSIONS = _model_permissions(
     "content", "siteconfiguration", ("view", "add", "change")
 )
