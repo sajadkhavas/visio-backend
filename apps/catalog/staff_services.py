@@ -6,6 +6,7 @@ from apps.accounts.models import User
 from apps.operations.audit import append_audit_event
 from apps.operations.permissions import require_staff_permission
 
+
 def save_catalog_object_as_staff[ModelT: models.Model](
     actor: User,
     obj: ModelT,
