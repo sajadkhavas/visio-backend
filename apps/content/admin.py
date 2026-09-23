@@ -1,20 +1,26 @@
 from typing import Any
+from uuid import UUID
 
 from django.contrib import admin
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
 from django.http import HttpRequest
 
 from apps.accounts.models import User
-from apps.operations.audit import append_audit_event
 
 from .models import ContactMessage, ContentEntry, HomepageBlock, SiteConfiguration
+from .staff_services import (
+    delete_homepage_block_as_staff,
+    save_content_entry_as_staff,
+    save_homepage_block_as_staff,
+    save_site_configuration_as_staff,
+    set_contact_message_status_as_staff,
+)
 
 
-def _require_staff_user(request: HttpRequest) -> User:
+def _staff_actor(request: HttpRequest) -> User:
     actor = request.user
-    if not isinstance(actor, User) or not actor.is_staff:
-        raise PermissionDenied("Authenticated staff user required for admin mutation.")
+    if not isinstance(actor, User):
+        raise PermissionDenied("Authenticated VISIO staff user required.")
     return actor
 
 
@@ -35,25 +41,8 @@ class ContentEntryAdmin(admin.ModelAdmin):
         form: Any,
         change: bool,
     ) -> None:
-        actor = _require_staff_user(request)
-        before_status = None
-        if change and obj.pk:
-            before_status = ContentEntry.objects.only("status").get(pk=obj.pk).status
-        with transaction.atomic():
-            super().save_model(request, obj, form, change)
-            append_audit_event(
-                actor=actor,
-                action="content.updated" if change else "content.created",
-                object_type="content.ContentEntry",
-                object_id=str(obj.pk),
-                summary="Editorial/public page content mutation through Django Admin.",
-                metadata={
-                    "kind": obj.kind,
-                    "slug": obj.slug,
-                    "fromStatus": before_status,
-                    "toStatus": obj.status,
-                },
-            )
+        del form
+        save_content_entry_as_staff(_staff_actor(request), obj, change=change)
 
 
 @admin.register(SiteConfiguration)
@@ -100,20 +89,14 @@ class SiteConfigurationAdmin(admin.ModelAdmin):
         return False
 
     def save_model(
-        self, request: HttpRequest, obj: SiteConfiguration, form: Any, change: bool
+        self,
+        request: HttpRequest,
+        obj: SiteConfiguration,
+        form: Any,
+        change: bool,
     ) -> None:
-        actor = _require_staff_user(request)
-        with transaction.atomic():
-            obj.full_clean()
-            super().save_model(request, obj, form, change)
-            append_audit_event(
-                actor=actor,
-                action="site.config.updated" if change else "site.config.created",
-                object_type="content.SiteConfiguration",
-                object_id=str(obj.pk),
-                summary="Public site configuration changed through Django Admin.",
-                metadata={"configured": True},
-            )
+        del form
+        save_site_configuration_as_staff(_staff_actor(request), obj, change=change)
 
 
 @admin.register(HomepageBlock)
@@ -123,34 +106,18 @@ class HomepageBlockAdmin(admin.ModelAdmin):
     search_fields = ("key", "title", "eyebrow", "body")
     ordering = ("sort_order", "id")
 
-    def save_model(self, request: HttpRequest, obj: HomepageBlock, form: Any, change: bool) -> None:
-        actor = _require_staff_user(request)
-        with transaction.atomic():
-            obj.full_clean()
-            super().save_model(request, obj, form, change)
-            append_audit_event(
-                actor=actor,
-                action="site.home_block.updated" if change else "site.home_block.created",
-                object_type="content.HomepageBlock",
-                object_id=str(obj.pk),
-                summary="Homepage merchandising/content block changed through Django Admin.",
-                metadata={"key": obj.key, "type": obj.block_type, "enabled": obj.is_enabled},
-            )
+    def save_model(
+        self,
+        request: HttpRequest,
+        obj: HomepageBlock,
+        form: Any,
+        change: bool,
+    ) -> None:
+        del form
+        save_homepage_block_as_staff(_staff_actor(request), obj, change=change)
 
     def delete_model(self, request: HttpRequest, obj: HomepageBlock) -> None:
-        actor = _require_staff_user(request)
-        object_id = str(obj.pk)
-        metadata = {"key": obj.key, "type": obj.block_type}
-        with transaction.atomic():
-            super().delete_model(request, obj)
-            append_audit_event(
-                actor=actor,
-                action="site.home_block.deleted",
-                object_type="content.HomepageBlock",
-                object_id=object_id,
-                summary="Homepage block deleted through Django Admin.",
-                metadata=metadata,
-            )
+        delete_homepage_block_as_staff(_staff_actor(request), obj)
 
 
 @admin.register(ContactMessage)
@@ -171,21 +138,21 @@ class ContactMessageAdmin(admin.ModelAdmin):
         return False
 
     def save_model(
-        self, request: HttpRequest, obj: ContactMessage, form: Any, change: bool
+        self,
+        request: HttpRequest,
+        obj: ContactMessage,
+        form: Any,
+        change: bool,
     ) -> None:
-        if not change:
+        del form
+        if not change or obj.pk is None:
             raise PermissionDenied(
                 "Contact messages can only be created through the public intake API."
             )
-        actor = _require_staff_user(request)
-        before = ContactMessage.objects.only("status").get(pk=obj.pk).status
-        with transaction.atomic():
-            super().save_model(request, obj, form, change)
-            append_audit_event(
-                actor=actor,
-                action="contact.status.changed",
-                object_type="content.ContactMessage",
-                object_id=str(obj.pk),
-                summary="Contact message workflow status changed through Django Admin.",
-                metadata={"fromStatus": before, "toStatus": obj.status},
-            )
+        updated = set_contact_message_status_as_staff(
+            _staff_actor(request),
+            message_id=UUID(str(obj.pk)),
+            status=obj.status,
+        )
+        obj.status = updated.status
+        obj.updated_at = updated.updated_at
