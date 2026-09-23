@@ -11,6 +11,7 @@ from apps.commerce.services import InventoryUnavailableError
 from apps.operations.audit import append_audit_event, verify_audit_chain
 from apps.operations.models import AuditEvent, NotificationDeliveryAttempt, NotificationOutbox
 from apps.operations.notifications import dispatch_notification, queue_notification
+from apps.operations.permissions import staff_has_permissions
 from apps.operations.roles import ROLE_MATRIX, sync_staff_roles
 from apps.operations.staff_services import advance_order_as_staff, set_inventory_as_staff
 from apps.orders.models import Order
@@ -351,3 +352,24 @@ def test_staff_me_requires_staff_and_exposes_existing_roles_and_permissions() ->
     assert payload["groups"] == ["VISIO Catalog Manager"]
     assert "catalog.view_product" in payload["permissions"]
     assert "commerce.change_variantprice" in payload["permissions"]
+
+
+def test_reusable_staff_permission_helper_requires_active_staff_and_all_permissions() -> None:
+    actor = staff_user(
+        "permission-helper@example.com",
+        permission("operations", "view_auditevent"),
+    )
+
+    assert staff_has_permissions(actor) is True
+    assert staff_has_permissions(actor, ("operations.view_auditevent",)) is True
+    assert (
+        staff_has_permissions(
+            actor,
+            ("operations.view_auditevent", "orders.change_order"),
+        )
+        is False
+    )
+
+    actor.is_active = False
+    actor.save(update_fields=("is_active",))
+    assert staff_has_permissions(actor) is False

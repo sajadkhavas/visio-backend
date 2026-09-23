@@ -3,8 +3,6 @@ from typing import cast
 from django.db.models import Count
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,11 +12,11 @@ from apps.orders.models import Order
 from apps.payments.models import PaymentReconciliation
 
 from .models import AuditEvent, NotificationOutbox
-from .permissions import HasOperationsViewPermission
+from .permissions import HasStaffPermissions
 
 
 class StaffMeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasStaffPermissions]
 
     @extend_schema(
         operation_id="staff_me",
@@ -26,9 +24,6 @@ class StaffMeView(APIView):
     )
     def get(self, request: Request) -> Response:
         user = cast(User, request.user)
-        if not user.is_active or not user.is_staff:
-            raise PermissionDenied("Active VISIO staff access is required.")
-
         groups = sorted(
             user.groups.filter(name__startswith="VISIO ").values_list("name", flat=True)
         )
@@ -48,7 +43,8 @@ class StaffMeView(APIView):
 
 
 class OperationsSummaryView(APIView):
-    permission_classes = [HasOperationsViewPermission]
+    permission_classes = [HasStaffPermissions]
+    required_staff_permissions = ("operations.view_auditevent",)
 
     @extend_schema(
         operation_id="staff_operations_summary",

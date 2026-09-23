@@ -4,7 +4,6 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
 from apps.accounts.models import User
@@ -15,11 +14,7 @@ from apps.orders.models import Order
 from apps.orders.services import advance_fulfillment
 
 from .audit import append_audit_event
-
-
-def require_staff_permission(actor: User, permission: str) -> None:
-    if not actor.is_active or not actor.is_staff or not actor.has_perm(permission):
-        raise PermissionDenied(f"Missing staff permission: {permission}")
+from .permissions import require_staff_permission
 
 
 def advance_order_as_staff(
